@@ -45,17 +45,6 @@ class MQTTClient {
       }
     });
   }
-
-  public meta(topic: string, message: any) {
-    const data = JSON.stringify(message);
-    this.client.publish(topic, data, (error) => {
-      if (error) {
-        logger.error("Error publishing message:", error);
-      } else {
-        logger.info(`Published to topic: ${topic}, message: ${data}`);
-      }
-    });
-  }
 }
 
 export default MQTTClient;

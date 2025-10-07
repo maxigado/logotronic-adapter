@@ -30,8 +30,6 @@ class TCPClient {
 
   public onData(data: Buffer) {
     logger.info(`Received message from  ${this.clientId}: ${data}`);
-    const message = data.toString("hex").toUpperCase();
-    logger.info(`Received message from  ${this.clientId} (hex): ${message}`);
   }
 
   public onClose() {

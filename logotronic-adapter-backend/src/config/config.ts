@@ -37,7 +37,7 @@ export const config = {
     url: "mqtt://localhost",
     username: "edge",
     password: "edge",
-    client: "S7Connector",
+    client: "LogotronicAdapter",
     topic: {
       read: "ie/d/j/simatic/v1/s7c1/dp/r/plc/default",
       write: "ie/d/j/simatic/v1/s7c1/dp/w/plc",
@@ -54,6 +54,6 @@ export const config = {
   },
   logotronicserver: {
     host: "localhost",
-    port: 64001,
+    port: 64002,
   },
 };
