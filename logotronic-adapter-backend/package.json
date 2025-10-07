@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "build": "tsc && cp -r src/views dist/views",
-    "dev": "tsc && xcopy src\\views dist\\views /E /I /Y && node dist/index.js"
+    "dev": "tsc && xcopy src\\views dist\\views /E /I /Y && nodemon dist/index.js --watch src --ext ts,js,json,ejs --exec \"tsc && xcopy src\\views dist\\views /E /I /Y && node dist/index.js\""
   },
   "devDependencies": {
     "@types/ejs": "^3.1.5",

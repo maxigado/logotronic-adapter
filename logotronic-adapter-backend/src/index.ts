@@ -32,6 +32,6 @@ server.listen(config.application.port, () => {
 
 webSocketManager.start(server);
 
-// setTimeout(() => {
-//   dataprocessing.initdataprocessing();
-// }, 1000);
+setTimeout(() => {
+  dataprocessing.initdataprocessing();
+}, 1000);

@@ -3,30 +3,33 @@ import MQTTClient from "../utility/mqtt";
 import logger from "../utility/logger";
 import { IMessage } from "../dataset/common";
 
+export let mqttClientInstance: MQTTClient;
+
 const dataprocessing = {
   initdataprocessing() {
     logger.info("Initialize Data Processing Service");
     try {
-      const mqttClient = new MQTTClient(
+      mqttClientInstance = new MQTTClient(
         config.databus.url,
         config.databus.username,
         config.databus.password,
         config.databus.client
       );
       logger.info("Trying to connect Databus");
-      mqttClient.client.on("connect", () => {
+
+      mqttClientInstance.client.on("connect", () => {
         logger.info("MQTT Client is connected to Databus");
-        mqttClient.subscribe(config.databus.topic.read);
-        mqttClient.subscribe(config.databus.topic.status);
-        mqttClient.subscribe(config.databus.topic.metadata);
+        mqttClientInstance.subscribe(config.databus.topic.read);
+        mqttClientInstance.subscribe(config.databus.topic.status);
+        mqttClientInstance.subscribe(config.databus.topic.metadata);
         setTimeout(() => {
-          messageListener(mqttClient);
+          messageListener();
         }, 1000);
 
         setTimeout(() => {
           const updateRequestTopic = config.databus.topic.update;
           const updateRequestMessage: any = { Path: "s7c1" };
-          mqttClient.publish(updateRequestTopic, updateRequestMessage);
+          mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
         }, 2000);
       });
     } catch (error) {
@@ -36,8 +39,8 @@ const dataprocessing = {
 };
 export default dataprocessing;
 
-function messageListener(mqttClient: MQTTClient) {
-  mqttClient.client.on("message", (topic, data) => {
+function messageListener() {
+  mqttClientInstance.client.on("message", (topic, data) => {
     try {
       const message: IMessage = JSON.parse(data.toString());
       if (topic === config.databus.topic.status) {
@@ -47,7 +50,7 @@ function messageListener(mqttClient: MQTTClient) {
         logger.info(`Received update message from topic: ${topic}`);
         processMetadataMessage(message, topic);
       } else if (topic === config.databus.topic.read) {
-        logger.debug(`Received message from data topic: ${topic}`);
+        logger.info(`Received message from data topic: ${topic}`);
         processMachineMessage(message, topic);
       } else {
         logger.warn(`Unknown topic: ${topic}`);
@@ -67,5 +70,5 @@ function processMetadataMessage(message: IMessage, topic: string) {
 }
 
 function processMachineMessage(message: IMessage, topic: string) {
-  logger.debug(`Processing message from topic ${topic}:`, message);
+  logger.info(`Processing message from topic ${topic}:`, message);
 }
