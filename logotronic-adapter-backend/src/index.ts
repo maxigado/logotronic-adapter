@@ -8,7 +8,7 @@ import router from "./controller/api/route";
 import WebSocketManager from "./utility/websocket";
 import logger from "./utility/logger";
 import { config } from "./config/config";
-import dataprocessing from "./service/dataprocessing";
+import dataprocessing from "./services/dataprocessing";
 import { statusStoreInstance } from "./store/statusstore"; // StatusStore eklendi
 
 const app = express();

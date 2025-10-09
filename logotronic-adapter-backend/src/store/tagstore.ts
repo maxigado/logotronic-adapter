@@ -101,7 +101,7 @@ class TagStore {
       });
     });
 
-    logger.info(`TagStore successfully initialized with ${tagCount} tags.`);
+    logger.debug(`TagStore successfully initialized with ${tagCount} tags.`);
   }
 
   /**
@@ -129,7 +129,7 @@ class TagStore {
         if (tagData.value !== val.val) {
           tagData.value = val.val;
           updatedCount++;
-          logger.info(
+          logger.debug(
             `Tag updated: ${tagData.name} (ID: ${tagData.id}) = ${tagData.value}`
           );
         }
@@ -140,7 +140,7 @@ class TagStore {
       }
     });
 
-    logger.info(`TagStore: ${updatedCount} tag values updated.`);
+    logger.debug(`TagStore: ${updatedCount} tag values updated.`);
   }
 
   /**
