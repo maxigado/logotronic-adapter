@@ -23,6 +23,20 @@ class MQTTClient {
     this.client.on("error", (error) => {
       logger.error(`${clientId} MQTT Client Error: ${error}`);
     });
+
+    this.client.on("reconnect", () => {
+      logger.warn(`${clientId} is reconnecting to MQTT broker...`);
+    });
+
+    this.client.on("close", () => {
+      logger.warn(`${clientId} MQTT connection closed.`);
+    });
+
+    this.client.on("disconnect", (packet) => {
+      logger.error(
+        `${clientId} disconnected from MQTT broker. Reason: ${packet.reasonCode}`
+      );
+    });
   }
 
   public subscribe(topic: string) {
