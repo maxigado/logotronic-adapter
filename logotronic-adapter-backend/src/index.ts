@@ -37,6 +37,5 @@ webSocketManager.start(server);
 
 setTimeout(() => {
   dataprocessing.initdataprocessing();
-  // StatusStore'un WebSocket event dinleyicilerini en son ve güvenli bir şekilde başlat
   statusStoreInstance.initializeWebSocketListeners();
 }, 1000);

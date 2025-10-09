@@ -33,12 +33,6 @@ const dataprocessing = {
         setTimeout(() => {
           MQTTLister();
         }, 1000);
-
-        setTimeout(() => {
-          const updateRequestTopic = config.databus.topic.update;
-          const updateRequestMessage: any = { Path: "s7c1" };
-          mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
-        }, 2000);
       });
 
       logger.info("Trying to connect Logotronic Server");
@@ -105,6 +99,11 @@ function processStatusMessage(message: IStatusMessage, topic: string) {
 function processMetadataMessage(message: IMetadataMessage, topic: string) {
   logger.info(`Processing metadata message:`, message);
   tagStoreInstance.initialize(message);
+  setTimeout(() => {
+    const updateRequestTopic = config.databus.topic.update;
+    const updateRequestMessage: any = { Path: "s7c1" };
+    mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
+  }, 2000);
 }
 
 // **GÜNCEL FONKSİYON:** Makine veri mesajını TagStore'daki değerleri güncellemek için kullan
