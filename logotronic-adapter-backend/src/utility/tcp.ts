@@ -1,5 +1,6 @@
 import * as net from "net";
 import logger from "./logger";
+import { statusStoreInstance } from "../service/statusstore"; // StatusStore eklendi
 
 class TCPClient {
   public client: net.Socket;
@@ -25,7 +26,7 @@ class TCPClient {
       `Client is connected to  ${this.clientId} at ${this.host}:${this.port}`
     );
 
-    updateMachineStatus(this.clientId, 1);
+    statusStoreInstance.setLogotronicStatus("connected"); // Status Güncellemesi
   }
 
   public onData(data: Buffer) {
@@ -39,15 +40,14 @@ class TCPClient {
       `Client disconnected from ${this.clientId}  at ${this.host}:${this.port}`
     );
 
-    updateMachineStatus(this.clientId, 0);
-
+    statusStoreInstance.setLogotronicStatus("disconnected"); // Status Güncellemesi
     this.reconnect();
   }
 
   public onError(error: Error) {
     logger.error(`${this.clientId} Error: ${error.message}`);
 
-    updateMachineStatus(this.clientId, 0);
+    statusStoreInstance.setLogotronicStatus("error");
 
     this.client.destroy();
   }
@@ -81,7 +81,3 @@ class TCPClient {
 }
 
 export default TCPClient;
-
-function updateMachineStatus(clientId: string, status: number) {
-  return "OK  ";
-}

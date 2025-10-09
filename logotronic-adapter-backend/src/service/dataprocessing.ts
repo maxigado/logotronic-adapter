@@ -7,7 +7,8 @@ import logger from "../utility/logger";
 import { IMessage } from "../dataset/common";
 import { IMetadataMessage } from "../dataset/metadata"; // Yeni arayüz importu
 import { tagStoreInstance } from "./tagstore"; // Yeni servis importu
-
+import { IStatusMessage } from "../dataset/status"; // Yeni tip eklendi
+import { statusStoreInstance } from "../service/statusstore"; // StatusStore eklendi
 export let mqttClientInstance: MQTTClient;
 export let tcpClientInstance: TCPClient;
 
@@ -68,7 +69,7 @@ function MQTTLister() {
       if (topic === config.databus.topic.status) {
         logger.info(`Received status message from topic: ${topic}`);
         // Status mesajları için IMessage tipini kullan
-        processStatusMessage(message as IMessage, topic);
+        processStatusMessage(message as IStatusMessage, topic);
       } else if (topic === config.databus.topic.metadata) {
         logger.info(`Received metadata message from topic: ${topic}`);
         // Metadata mesajları için yeni IMetadataMessage tipini kullan
@@ -95,8 +96,9 @@ function TCPListener() {
   });
 }
 
-function processStatusMessage(message: IMessage, topic: string) {
+function processStatusMessage(message: IStatusMessage, topic: string) {
   logger.info(`Processing status message:`, message);
+  statusStoreInstance.updateMachineStatus(message);
 }
 
 // **GÜNCEL FONKSİYON:** Metadata mesajını TagStore'u başlatmak için kullan

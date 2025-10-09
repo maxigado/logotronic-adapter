@@ -1,6 +1,7 @@
 import * as mqtt from "mqtt";
 import logger from "./logger";
 import { IMessage } from "../dataset/common";
+import { statusStoreInstance } from "../service/statusstore"; // StatusStore eklendi
 
 class MQTTClient {
   public client: mqtt.MqttClient;
@@ -18,10 +19,12 @@ class MQTTClient {
 
     this.client.on("connect", () => {
       logger.info(`${clientId} is connected to MQTT broker at ${brokerUrl}`);
+      statusStoreInstance.setDatabusStatus("connected"); // Status Güncellemesi
     });
 
     this.client.on("error", (error) => {
       logger.error(`${clientId} MQTT Client Error: ${error}`);
+      statusStoreInstance.setDatabusStatus("error"); // Status Güncellemesi
     });
 
     this.client.on("reconnect", () => {
@@ -30,12 +33,14 @@ class MQTTClient {
 
     this.client.on("close", () => {
       logger.warn(`${clientId} MQTT connection closed.`);
+      statusStoreInstance.setDatabusStatus("disconnected"); // Status Güncellemesi
     });
 
     this.client.on("disconnect", (packet) => {
       logger.error(
         `${clientId} disconnected from MQTT broker. Reason: ${packet.reasonCode}`
       );
+      statusStoreInstance.setDatabusStatus("disconnected"); // Status Güncellemesi
     });
   }
 

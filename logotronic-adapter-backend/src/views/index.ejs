@@ -2,11 +2,77 @@
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
-    <title><%= title %></title>
+    <title>Logotronic Adapter</title>
     <link rel="stylesheet" href="/style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      .status-item {
+        margin: 5px 0;
+        padding: 8px 10px;
+        border-radius: 4px;
+        font-family: monospace;
+      }
+      /* Durum bazlı renkler */
+      .connected {
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+      }
+      .disconnected {
+        background-color: #f8d7da;
+        color: #721c24;
+        border: 1px solid #f5c6cb;
+      }
+      .error {
+        background-color: #fff3cd;
+        color: #856404;
+        border: 1px solid #ffeeba;
+      }
+    </style>
   </head>
   <body>
-    <h1><%= message %></h1>
-    <p>Bu sayfa TypeScript + EJS kullanılarak render edildi.</p>
+    <h2>Sistem Durumları (WebSocket)</h2>
+    <div id="status-container">
+      <p>WebSocket bağlantısı bekleniyor...</p>
+    </div>
+
+    <script>
+      // WebSocket bağlantısını başlat (aynı host ve port üzerinden)
+      const socket = io();
+      const statusContainer = document.getElementById("status-container");
+
+      socket.on("statusUpdate", (data) => {
+        const statuses = data.status;
+        let html = "<ul>";
+
+        // Status objesi üzerindeki tüm key-value çiftlerini döngüye al
+        for (const key in statuses) {
+          if (statuses.hasOwnProperty(key)) {
+            const statusValue = statuses[key];
+
+            // Key'i daha okunaklı hale getir (örn: databus -> Databus)
+            const displayKey =
+              key.charAt(0).toUpperCase() +
+              key.slice(1).replace(/([A-Z])/g, " $1");
+            const className = statusValue; // CSS sınıfı için: connected, disconnected, error
+
+            html += `
+              <li class="status-item ${className}">
+                <strong>${displayKey}</strong>: ${statusValue.toUpperCase()}
+              </li>
+            `;
+          }
+        }
+
+        html += "</ul>";
+        statusContainer.innerHTML = html;
+        console.log("Status updated:", statuses);
+      });
+
+      socket.on("disconnect", () => {
+        statusContainer.innerHTML =
+          '<p class="status-item disconnected">BAĞLANTI KOPTU. Yeniden bağlanılıyor...</p>';
+      });
+    </script>
   </body>
 </html>

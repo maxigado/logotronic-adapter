@@ -1,3 +1,5 @@
+// src/index.ts
+
 import express from "express";
 import http from "http";
 import cors from "cors";
@@ -7,6 +9,7 @@ import WebSocketManager from "./utility/websocket";
 import logger from "./utility/logger";
 import { config } from "./config/config";
 import dataprocessing from "./service/dataprocessing";
+import { statusStoreInstance } from "./service/statusstore"; // StatusStore eklendi
 
 const app = express();
 const server = http.createServer(app);
@@ -34,4 +37,6 @@ webSocketManager.start(server);
 
 setTimeout(() => {
   dataprocessing.initdataprocessing();
+  // StatusStore'un WebSocket event dinleyicilerini en son ve güvenli bir şekilde başlat
+  statusStoreInstance.initializeWebSocketListeners();
 }, 1000);
