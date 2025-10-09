@@ -1,7 +1,7 @@
 import * as mqtt from "mqtt";
 import logger from "./logger";
 import { IMessage } from "../dataset/common";
-import { statusStoreInstance } from "../service/statusstore"; // StatusStore eklendi
+import { statusStoreInstance } from "../store/statusstore"; // StatusStore eklendi
 
 class MQTTClient {
   public client: mqtt.MqttClient;

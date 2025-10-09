@@ -1,6 +1,6 @@
 import * as net from "net";
 import logger from "./logger";
-import { statusStoreInstance } from "../service/statusstore"; // StatusStore eklendi
+import { statusStoreInstance } from "../store/statusstore"; // StatusStore eklendi
 
 class TCPClient {
   public client: net.Socket;

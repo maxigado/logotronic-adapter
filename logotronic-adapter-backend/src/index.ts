@@ -9,7 +9,7 @@ import WebSocketManager from "./utility/websocket";
 import logger from "./utility/logger";
 import { config } from "./config/config";
 import dataprocessing from "./service/dataprocessing";
-import { statusStoreInstance } from "./service/statusstore"; // StatusStore eklendi
+import { statusStoreInstance } from "./store/statusstore"; // StatusStore eklendi
 
 const app = express();
 const server = http.createServer(app);

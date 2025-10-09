@@ -1,6 +1,6 @@
 import logger from "../../utility/logger";
 import { Request, Response } from "express";
-import { tagStoreInstance } from "../../service/tagstore";
+import { tagStoreInstance } from "../../store/tagstore";
 
 export async function getMachineStatus(req: Request, res: Response) {
   try {
