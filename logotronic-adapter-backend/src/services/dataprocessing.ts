@@ -4,7 +4,6 @@ import { config } from "../config/config";
 import MQTTClient from "../utility/mqtt";
 import TCPClient from "../utility/tcp";
 import logger from "../utility/logger";
-import { IMessage } from "../dataset/common";
 import { IMetadataMessage } from "../dataset/metadata"; // Yeni arayüz importu
 import { tagStoreInstance } from "../store/tagstore"; // Yeni servis importu
 import { IStatusMessage } from "../dataset/status"; // Yeni tip eklendi
