@@ -14,7 +14,7 @@ const transport = new DailyRotateFile({
 
 const logger = createLogger({
   format: format.combine(
-    format.label({ label: "tubtraceability" }),
+    format.label({ label: "logotronic-adapter" }),
     format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }), // Specify your desired timestamp format
     format.printf(({ level, message, label, timestamp }) => {
       return `${timestamp} [${label}] ${level}: ${message}`;
