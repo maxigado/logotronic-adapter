@@ -61,7 +61,7 @@ export function createLogotronicRequestFrame(
     (tagStoreInstance.getValueByTagName(
       "LTA-Data.frame.request.header.workPlaceID"
     ) as string) ||
-    "NODE-APP";
+    "LTA";
 
   // TagStore'dan okuma başarılı oldu mu kontrolü
   if (transactionID === 1) {
