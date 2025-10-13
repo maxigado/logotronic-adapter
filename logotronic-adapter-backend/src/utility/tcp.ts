@@ -1,6 +1,8 @@
 import * as net from "net";
 import logger from "./logger";
 import { statusStoreInstance } from "../store/statusstore"; // StatusStore eklendi
+// Yeni import: createLogotronicRequestFrame'i kullanmak için Buffer tipini kullanacağız.
+// Bu dosya Buffer'ı zaten net modülü üzerinden alıyor.
 
 class TCPClient {
   public client: net.Socket;
@@ -23,21 +25,24 @@ class TCPClient {
   public onConnect() {
     this.isConnected = true;
     logger.info(
-      `Client is connected to  ${this.clientId} at ${this.host}:${this.port}`
+      `Client is connected to ${this.clientId} at ${this.host}:${this.port}`
     );
 
     statusStoreInstance.setLogotronicStatus("connected"); // Status Güncellemesi
   }
 
   public onData(data: Buffer) {
-    logger.info(`Received message from  ${this.clientId}: ${data}`);
+    logger.info(
+      `Received message from ${this.clientId}: ${data.toString("hex")}`
+    ); // Hex formatında logla
+    // Yanıt işleme mantığı burada olacaktır (LogotronicResponseHandler'a yönlendirme)
   }
 
   public onClose() {
     this.client.destroy();
     this.isConnected = false;
     logger.info(
-      `Client disconnected from ${this.clientId}  at ${this.host}:${this.port}`
+      `Client disconnected from ${this.clientId} at ${this.host}:${this.port}`
     );
 
     statusStoreInstance.setLogotronicStatus("disconnected"); // Status Güncellemesi
@@ -56,7 +61,7 @@ class TCPClient {
     setTimeout(() => {
       if (!this.isConnected) {
         logger.info(
-          `Client reconnecting to ${this.clientId}  at ${this.host}:${this.port}`
+          `Client reconnecting to ${this.clientId} at ${this.host}:${this.port}`
         );
         this.client.connect(this.port, this.host);
       }
@@ -67,11 +72,21 @@ class TCPClient {
     this.client.connect(this.port, this.host);
   }
 
-  public send(message: string) {
+  /**
+   * Logotronic'e binary Buffer mesajı gönderir.
+   * @param message createLogotronicRequestFrame'den gelen binary Buffer.
+   */
+  public send(message: Buffer) {
     if (this.isConnected) {
-      this.client.write(Buffer.from(message, "hex"));
+      // Artık string ve 'hex' yerine doğrudan Buffer gönderiyoruz.
+      this.client.write(message);
+      logger.info(
+        `Sent a Logotronic request with length: ${message.length} bytes.`
+      );
     } else {
-      logger.error(`Client is not connected to ${this.clientId}`);
+      logger.error(
+        `Client is not connected to ${this.clientId}. Cannot send message.`
+      );
     }
   }
 

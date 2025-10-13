@@ -327,7 +327,7 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
 function processMachineMessage(message: any, topic: string) {
   logger.debug(`Processing machine data message from topic ${topic}.`);
   // 1. Gelen değerlerle TagStore'u güncelle
-  // tagStoreInstance.updateValues(message);
+  tagStoreInstance.updateValues(message);
 
   const triggerTagsMap = new Map<string, LogotronicRequestBuilder>();
 
