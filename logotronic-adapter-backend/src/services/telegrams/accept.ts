@@ -2,7 +2,9 @@
 import logger from "../../utility/logger";
 
 export function logotronicRequestBuilder() {
-  logger.info("Logotronic Request Builder is called for accept service");
+  logger.info(
+    "Accept service has no Logotronic Request. Accept Response will be received once Logotronic connection is established"
+  );
 }
 
 export function logotronicResponseHandler(xmlResponse: string) {

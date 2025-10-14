@@ -2,7 +2,9 @@
 import logger from "../../utility/logger";
 
 export function logotronicRequestBuilder() {
-  logger.info("Logotronic Request Builder is called for info service");
+  logger.info(
+    "Info service has no Logotronic Request. Info Response will be received once Logotronic send additional information"
+  );
 }
 
 export function logotronicResponseHandler(xmlResponse: string) {

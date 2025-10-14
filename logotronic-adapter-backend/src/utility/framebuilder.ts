@@ -29,16 +29,16 @@ function padAscii(str: string, targetLength: number): string {
 }
 
 /**
- * Verilen XML gövdesini ve parametreleri kullanarak Logotronic Rapida TCP
+ * Verilen XML gövdesini veya binary Buffer'ı ve parametreleri kullanarak Logotronic Rapida TCP
  * isteği için tam bir binary çerçeve (Buffer) oluşturur.
  * Header parametreleri (version, transactionID, workplaceID) doğrudan tagStore'dan okunur.
  *
- * @param xmlBody Gönderilecek olan temizlenmemiş XML mesajı.
+ * @param payloadBody Gönderilecek olan temizlenmemiş XML mesajı (string) veya hazır binary payload (Buffer).
  * @param params Sadece TypeID ve opsiyonel WorkplaceID'yi içerir.
  * @returns TCP soketi üzerinden gönderilmeye hazır bir Buffer nesnesi.
  */
 export function createLogotronicRequestFrame(
-  xmlBody: string,
+  payloadBody: string | Buffer,
   params: LogotronicFrameParams
 ): Buffer {
   const HEADER_SIZE = 28;
@@ -49,13 +49,11 @@ export function createLogotronicRequestFrame(
     (tagStoreInstance.getValueByTagName(
       "LTA-Data.frame.request.header.version"
     ) as number) || 0;
-  // transactionID, her request'te bir artırılmalıdır. Buradaki değer, en son durumdur.
   const transactionID =
     (tagStoreInstance.getValueByTagName(
       "LTA-Data.frame.request.header.transactionID"
     ) as number) || 1;
 
-  // WorkplaceID için override varsa onu kullan, yoksa tagStore'dan oku, o da yoksa varsayılanı kullan.
   const workplaceID =
     params.workplaceIDOverride ||
     (tagStoreInstance.getValueByTagName(
@@ -63,21 +61,27 @@ export function createLogotronicRequestFrame(
     ) as string) ||
     "LTA";
 
-  // TagStore'dan okuma başarılı oldu mu kontrolü
   if (transactionID === 1) {
     logger.warn(
       "Could not read TransactionID from tagStore. Using default value: 1. Ensure tagStore is initialized."
     );
   }
 
-  // --- 2. XML Hazırlama ve Uzunluk Hesaplama ---
-  const cleanXmlBody = xmlBody
-    .replace(/\r?\n|\r/g, "")
-    .replace(/>\s+</g, "><")
-    .trim();
+  // --- 2. Payload Hazırlama ve Uzunluk Hesaplama ---
+  let payloadBuffer: Buffer;
+  if (typeof payloadBody === "string") {
+    // XML string ise temizle ve Buffer'a dönüştür
+    const cleanXmlBody = payloadBody
+      .replace(/\r?\n|\r/g, "")
+      .replace(/>\s+</g, "><")
+      .trim();
+    payloadBuffer = Buffer.from(cleanXmlBody, "utf8");
+  } else {
+    // Zaten bir Buffer ise doğrudan kullan
+    payloadBuffer = payloadBody;
+  }
 
-  const xmlBuffer = Buffer.from(cleanXmlBody, "utf8");
-  const dataLength = xmlBuffer.length;
+  const dataLength = payloadBuffer.length;
   const totalLength = HEADER_SIZE + dataLength + FOOTER_SIZE;
   const requestFrame = Buffer.alloc(totalLength);
 
@@ -110,9 +114,9 @@ export function createLogotronicRequestFrame(
   offset += 4;
 
   // ------------------------------------
-  // 4. BODY Alanına XML Kopyalanması
+  // 4. BODY Alanına Payload Kopyalanması
   // ------------------------------------
-  xmlBuffer.copy(requestFrame, offset);
+  payloadBuffer.copy(requestFrame, offset);
   offset += dataLength;
 
   // ------------------------------------
