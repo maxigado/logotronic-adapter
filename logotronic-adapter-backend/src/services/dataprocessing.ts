@@ -13,7 +13,7 @@ import { rapidaTypeIds } from "../dataset/typeid";
 
 // --- Tip Tanımları ---
 type LogotronicRequestBuilder = (message: any) => void;
-type LogotronicResponseHandler = (xmlResponse: string) => void;
+type LogotronicResponseHandler = (responseBody: Buffer) => void;
 
 // --- Logotronic Servis Importları (Builders - Request) ---
 import {
@@ -426,7 +426,7 @@ function processLogotricResponse(data: Buffer) {
   const bodyString = bodyBuffer.toString("utf8");
 
   logger.info(`Processing Logotronic Response. TypeID: ${typeId}`);
-  logger.debug("Response Body: " + bodyString);
+  logger.info("Response Body: " + bodyString);
 
   if (typeId) {
     const handlerFunction = serviceResponseHandlers[typeId];
@@ -435,7 +435,7 @@ function processLogotricResponse(data: Buffer) {
       logger.info(
         `Handler found for TypeID: ${typeId}. Calling Logotronic Response Handler.`
       );
-      handlerFunction(bodyString); // Pass the body string to the handler
+      handlerFunction(bodyBuffer); // Pass the body string to the handler
     } else {
       logger.warn(
         `No specific handler found for Logotronic Response TypeID: ${typeId}`

@@ -49,7 +49,8 @@ export function logotronicRequestBuilder() {
   }
 }
 
-export function logotronicResponseHandler(xmlResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
+  const xmlResponse = responseBody.toString("utf8");
   logger.info(
     `Logotronic Response Handler is called for personnel service with response: ${xmlResponse}`
   );

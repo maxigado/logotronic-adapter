@@ -28,8 +28,17 @@ export function logotronicRequestBuilder() {
   }
 }
 
-export function logotronicResponseHandler(xmlResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
+  logger.info(`Logotronic Response Handler is called for timeRequest service`);
+  // Binary response, not XML
+  const unixTime = responseBody.readUInt32BE(0);
+  const isSummerTime = responseBody.readUInt16BE(4);
+
   logger.info(
-    `Logotronic Response Handler is called for timeRequest service with response: ${xmlResponse}`
+    `Received time: ${new Date(
+      unixTime * 1000
+    ).toISOString()}, Summer Time: ${isSummerTime}`
   );
+
+  // TODO: Update a tag in the tag store with the new time
 }

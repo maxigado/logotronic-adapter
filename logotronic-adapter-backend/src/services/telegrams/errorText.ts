@@ -5,7 +5,8 @@ export function logotronicRequestBuilder() {
   logger.info("Logotronic Request Builder is called for errorText service");
 }
 
-export function logotronicResponseHandler(xmlResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
+  const xmlResponse = responseBody.toString("utf8");
   logger.info(
     `Logotronic Response Handler is called for errorText service with response: ${xmlResponse}`
   );

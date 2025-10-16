@@ -28,8 +28,34 @@ export function logotronicRequestBuilder() {
   }
 }
 
-export function logotronicResponseHandler(xmlResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
   logger.info(
-    `Logotronic Response Handler is called for workplaceInfo service with response: ${xmlResponse}`
+    `Logotronic Response Handler is called for workplaceInfo service`
   );
+  // Binary response, not XML
+  let offset = 0;
+
+  const workplaceName = responseBody
+    .toString("utf8", offset, offset + 31)
+    .trim();
+  offset += 31;
+
+  const workplaceType = responseBody
+    .toString("utf8", offset, offset + 11)
+    .trim();
+  offset += 11;
+
+  const workplaceDataLength = responseBody.readUInt32BE(offset);
+  offset += 4;
+
+  const workplaceData = responseBody.slice(
+    offset,
+    offset + workplaceDataLength
+  );
+
+  logger.info(
+    `WorkplaceName: ${workplaceName}, WorkplaceType: ${workplaceType}, DataLength: ${workplaceDataLength}`
+  );
+
+  // TODO: Update tags in the tag store
 }

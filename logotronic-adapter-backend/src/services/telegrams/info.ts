@@ -51,8 +51,9 @@ export function logotronicRequestBuilder() {
   }
 }
 
-export function logotronicResponseHandler(binaryResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
+  const xmlResponse = responseBody.toString("utf8");
   logger.info(
-    `Logotronic Response Handler is called for info service with response: ${binaryResponse}`
+    `Logotronic Response Handler is called for info service with response: ${xmlResponse}`
   );
 }

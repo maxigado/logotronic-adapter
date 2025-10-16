@@ -92,7 +92,8 @@ export function logotronicRequestBuilder() {
   }
 }
 
-export function logotronicResponseHandler(xmlResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
+  const xmlResponse = responseBody.toString("utf8");
   logger.info(
     `Logotronic Response Handler is called for jobHeadDataExchange service with response: ${xmlResponse}`
   );

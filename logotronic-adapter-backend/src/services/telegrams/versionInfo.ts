@@ -60,8 +60,32 @@ export function logotronicRequestBuilder() {
   }
 }
 
-export function logotronicResponseHandler(xmlResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
+  logger.info(`Logotronic Response Handler is called for versionInfo service`);
+  // Binary response, not XML
+  let offset = 0;
+
+  const commFrame = responseBody.readUInt32BE(offset);
+  offset += 4;
+
+  const protocolVersion = responseBody
+    .toString("utf8", offset, offset + 17)
+    .trim();
+  offset += 17;
+
+  const logotronicVersion = responseBody
+    .toString("utf8", offset, offset + 17)
+    .trim();
+  offset += 17;
+
+  const serverRevision = responseBody
+    .toString("utf8", offset, offset + 17)
+    .trim();
+  offset += 17;
+
   logger.info(
-    `Logotronic Response Handler is called for versionInfo service with response: ${xmlResponse}`
+    `CommFrame: ${commFrame}, ProtocolVersion: ${protocolVersion}, Logotronic: ${logotronicVersion}, ServerRevision: ${serverRevision}`
   );
+
+  // TODO: Update tags in the tag store
 }

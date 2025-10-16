@@ -75,8 +75,13 @@ export function logotronicRequestBuilder() {
   }
 }
 
-export function logotronicResponseHandler(xmlResponse: string) {
+export function logotronicResponseHandler(responseBody: Buffer) {
   logger.info(
-    `Logotronic Response Handler is called for workplaceSetup service with response: ${xmlResponse}`
+    `Logotronic Response Handler is called for workplaceSetup service`
   );
+  // Binary response, not XML
+  const returnCode = responseBody.readInt32BE(0);
+  logger.info(`Return Code: ${returnCode}`);
+
+  // TODO: Update tags in the tag store
 }
