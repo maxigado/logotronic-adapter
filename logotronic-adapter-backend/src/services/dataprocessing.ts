@@ -3,7 +3,6 @@
 import { config } from "../config/config";
 import MQTTClient from "../utility/mqtt";
 import TCPClient from "../utility/tcp";
-
 import logger from "../utility/logger";
 import { IMetadataMessage } from "../dataset/metadata";
 import { tagStoreInstance, ITagData } from "../store/tagstore";
@@ -364,7 +363,7 @@ function processMachineMessage(message: any, topic: string) {
 
 // **Aşama 2: TCP Yanıtlarını İşleme**
 function processLogotricResponse(data: Buffer) {
-  const HEADER_SIZE = 24;
+  const HEADER_SIZE = 20;
   const FOOTER_SIZE = 20;
 
   // 1. Check if buffer is long enough for the header
@@ -376,25 +375,11 @@ function processLogotricResponse(data: Buffer) {
   }
 
   // 2. Read TypeID from the header
-  // Try reading as a string for "ACCEPT"
   let typeId: string | undefined;
-  try {
-    const typeIdStr = data.toString("utf8", 16, 20).trim();
-    if (typeIdStr === "ACCE") {
-      // Checking for "ACCE" as it might be part of "ACCEPT"
-      const fullTypeIdStr = data.toString("utf8", 16, 22).trim();
-      if (fullTypeIdStr.startsWith("ACCEPT")) {
-        typeId = "ACCEPT";
-      }
-    }
-  } catch (e) {
-    // If string parsing fails, it's likely a numeric ID.
-  }
 
-  // If not "ACCEPT", read as a number
   if (!typeId) {
     try {
-      typeId = data.readUInt32BE(16).toString();
+      typeId = data.readUInt32BE(12).toString();
     } catch (error) {
       logger.error(
         "Could not extract TypeID from Logotronic response header.",
@@ -404,8 +389,8 @@ function processLogotricResponse(data: Buffer) {
     }
   }
 
-  // 3. Read dataLength from the header (offset 20, UInt32BE)
-  const dataLength = data.readUInt32BE(20);
+  // 3. Read dataLength from the header (offset 16, UInt32BE)
+  const dataLength = data.readUInt32BE(16);
 
   // 4. Check if the full frame is received
   if (data.length < HEADER_SIZE + dataLength + FOOTER_SIZE) {
