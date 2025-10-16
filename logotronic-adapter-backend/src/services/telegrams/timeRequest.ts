@@ -1,8 +1,11 @@
 // src/service/timeRequest.ts
 import logger from "../../utility/logger";
-import { tcpClientInstance } from "../dataprocessing";
+import { tcpClientInstance, mqttClientInstance } from "../dataprocessing";
 import { createLogotronicRequestFrame } from "../../utility/framebuilder";
 import { rapidaTypeIds } from "../../dataset/typeid";
+import { tagStoreInstance } from "../../store/tagstore";
+import { IPublishMessage } from "../../dataset/common";
+import { config } from "../../config/config";
 
 export function logotronicRequestBuilder() {
   logger.info("Logotronic Request Builder is called for timeRequest service");
@@ -29,16 +32,68 @@ export function logotronicRequestBuilder() {
 }
 
 export function logotronicResponseHandler(responseBody: Buffer) {
-  logger.info(`Logotronic Response Handler is called for timeRequest service`);
-  // Binary response, not XML
-  const unixTime = responseBody.readUInt32BE(0);
-  const isSummerTime = responseBody.readUInt16BE(4);
+  try {
+    logger.info(
+      `Logotronic Response Handler is called for timeRequest service`
+    );
 
-  logger.info(
-    `Received time: ${new Date(
-      unixTime * 1000
-    ).toISOString()}, Summer Time: ${isSummerTime}`
-  );
+    // 1. Parse the responseBody buffer
+    const unixTime = responseBody.readUInt32BE(0);
+    const isSummerTime = responseBody.readUInt16BE(4);
 
-  // TODO: Update a tag in the tag store with the new time
+    logger.debug(
+      `Parsed TimeRequest Response: UnixTime=${unixTime}, SummerTime=${isSummerTime}`
+    );
+
+    // 2. Get Tag IDs from tagStore
+    const timeStampTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.timeRequest.toMachine.timeStamp"
+    );
+    const summerTimeTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.timeRequest.toMachine.summerTime"
+    );
+
+    if (!timeStampTag || !summerTimeTag) {
+      logger.error(
+        "Could not find one or more required tags in tagStore for 'timeRequest' response. Cannot publish MQTT message."
+      );
+      return;
+    }
+
+    // 3. Build the MQTT message payload
+    const vals = [
+      {
+        id: timeStampTag.id,
+        val: unixTime,
+      },
+      {
+        id: summerTimeTag.id,
+        val: isSummerTime === 1, // Convert to boolean
+      },
+    ];
+
+    const mqttMessage: IPublishMessage = {
+      seq: 1, // Sequence number can be managed more dynamically if needed
+      vals: vals,
+    };
+
+    // 4. Publish the MQTT message
+    if (mqttClientInstance && mqttClientInstance.client.connected) {
+      const topic = config.databus.topic.write;
+      mqttClientInstance.publish(topic, mqttMessage as any);
+      logger.info(
+        `Published 'timeRequest' response data to MQTT topic: ${topic}`
+      );
+    } else {
+      logger.error(
+        "MQTT client is not connected. Cannot publish 'timeRequest' response data."
+      );
+    }
+  } catch (error) {
+    logger.error(
+      `Error in logotronicResponseHandler for timeRequest: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
 }

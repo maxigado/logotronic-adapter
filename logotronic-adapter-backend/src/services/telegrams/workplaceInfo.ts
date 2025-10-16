@@ -1,15 +1,18 @@
 // src/service/workplaceInfo.ts
 import logger from "../../utility/logger";
-import { tcpClientInstance } from "../dataprocessing";
+import { tcpClientInstance, mqttClientInstance } from "../dataprocessing";
 import { createLogotronicRequestFrame } from "../../utility/framebuilder";
 import { rapidaTypeIds } from "../../dataset/typeid";
+import { tagStoreInstance } from "../../store/tagstore";
+import { IPublishMessage } from "../../dataset/common";
+import { config } from "../../config/config";
 
 export function logotronicRequestBuilder() {
   logger.info("Logotronic Request Builder is called for workplaceInfo service");
 
   const typeId = rapidaTypeIds.workplaceInfo;
 
-  // This is a header-only request, so the body is an empty buffer.
+  // WP_INFO is a header-only request
   const bodyBuffer = Buffer.alloc(0);
 
   const requestBuffer = createLogotronicRequestFrame(bodyBuffer, {
@@ -17,9 +20,7 @@ export function logotronicRequestBuilder() {
   });
 
   if (tcpClientInstance && tcpClientInstance.isConnected) {
-    // Per user instruction, sending only the first 24 bytes, deviating from the protocol.
-    const slicedBuffer = requestBuffer.slice(0, 24);
-    tcpClientInstance.send(slicedBuffer);
+    tcpClientInstance.send(requestBuffer);
     logger.info(`workplaceInfo request (TypeID: ${typeId}) sent successfully.`);
   } else {
     logger.error(
@@ -29,33 +30,102 @@ export function logotronicRequestBuilder() {
 }
 
 export function logotronicResponseHandler(responseBody: Buffer) {
-  logger.info(
-    `Logotronic Response Handler is called for workplaceInfo service`
-  );
-  // Binary response, not XML
-  let offset = 0;
+  try {
+    logger.info(
+      `Logotronic Response Handler is called for workplaceInfo service`
+    );
 
-  const workplaceName = responseBody
-    .toString("utf8", offset, offset + 31)
-    .trim();
-  offset += 31;
+    // 1. Parse the responseBody buffer
+    let offset = 0;
 
-  const workplaceType = responseBody
-    .toString("utf8", offset, offset + 11)
-    .trim();
-  offset += 11;
+    const workplaceName = responseBody
+      .toString("ascii", offset, offset + 31)
+      .replace(/\0/g, "")
+      .trim();
+    offset += 31;
 
-  const workplaceDataLength = responseBody.readUInt32BE(offset);
-  offset += 4;
+    const workplaceType = responseBody
+      .toString("ascii", offset, offset + 11)
+      .replace(/\0/g, "")
+      .trim();
+    offset += 11;
 
-  const workplaceData = responseBody.slice(
-    offset,
-    offset + workplaceDataLength
-  );
+    const workplaceDataLength = responseBody.readUInt32BE(offset);
+    offset += 4;
 
-  logger.info(
-    `WorkplaceName: ${workplaceName}, WorkplaceType: ${workplaceType}, DataLength: ${workplaceDataLength}`
-  );
+    const workplaceData = responseBody.slice(
+      offset,
+      offset + workplaceDataLength
+    );
 
-  // TODO: Update tags in the tag store
+    logger.debug(
+      `Parsed WorkplaceInfo Response: Name='${workplaceName}', Type='${workplaceType}', DataLength=${workplaceDataLength}`
+    );
+
+    // 2. Get Tag IDs from tagStore
+    const nameTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.workplaceInfo.toMachine.workplaceName"
+    );
+    const typeTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.workplaceInfo.toMachine.workplaceType"
+    );
+    const lengthTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.workplaceInfo.toMachine.workplaceDataLength"
+    );
+    const dataTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.workplaceInfo.toMachine.workplaceData"
+    );
+
+    if (!nameTag || !typeTag || !lengthTag || !dataTag) {
+      logger.error(
+        "Could not find one or more required tags in tagStore for 'workplaceInfo' response. Cannot publish MQTT message."
+      );
+      return;
+    }
+
+    // 3. Build the MQTT message payload
+    const vals = [
+      {
+        id: nameTag.id,
+        val: workplaceName,
+      },
+      {
+        id: typeTag.id,
+        val: workplaceType,
+      },
+      {
+        id: lengthTag.id,
+        val: workplaceDataLength,
+      },
+      {
+        id: dataTag.id,
+        // Representing binary data as a hex string for MQTT
+        val: workplaceData.toString("hex"),
+      },
+    ];
+
+    const mqttMessage: IPublishMessage = {
+      seq: 1, // Sequence number can be managed more dynamically if needed
+      vals: vals,
+    };
+
+    // 4. Publish the MQTT message
+    if (mqttClientInstance && mqttClientInstance.client.connected) {
+      const topic = config.databus.topic.write;
+      mqttClientInstance.publish(topic, mqttMessage as any); // Cast to any to match publish signature
+      logger.info(
+        `Published 'workplaceInfo' response data to MQTT topic: ${topic}`
+      );
+    } else {
+      logger.error(
+        "MQTT client is not connected. Cannot publish 'workplaceInfo' response data."
+      );
+    }
+  } catch (error) {
+    logger.error(
+      `Error in logotronicResponseHandler for workplaceInfo: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    );
+  }
 }

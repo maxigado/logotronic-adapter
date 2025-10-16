@@ -1,9 +1,11 @@
 // src/service/workplaceSetup.ts
 import logger from "../../utility/logger";
-import { tcpClientInstance } from "../dataprocessing";
+import { tcpClientInstance, mqttClientInstance } from "../dataprocessing";
 import { createLogotronicRequestFrame } from "../../utility/framebuilder";
 import { rapidaTypeIds } from "../../dataset/typeid";
 import { tagStoreInstance } from "../../store/tagstore";
+import { IPublishMessage } from "../../dataset/common";
+import { config } from "../../config/config";
 
 export function logotronicRequestBuilder() {
   logger.info(
@@ -79,9 +81,58 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   logger.info(
     `Logotronic Response Handler is called for workplaceSetup service`
   );
-  // Binary response, not XML
-  const returnCode = responseBody.readInt32BE(0);
-  logger.info(`Return Code: ${returnCode}`);
 
-  // TODO: Update tags in the tag store
+  try {
+    if (responseBody.length < 4) {
+      logger.error(
+        `workplaceSetup response body is too short. Expected 4 bytes, but got ${responseBody.length}.`
+      );
+      return;
+    }
+    // 1. Parse the responseBody buffer
+    const returnCode = responseBody.readInt32BE(0);
+    logger.debug(`Parsed WorkplaceSetup Response: ReturnCode=${returnCode}`);
+
+    // 2. Get Tag ID from tagStore
+    const returnCodeTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.workplaceSetup.toMachine.returnCode"
+    );
+
+    if (!returnCodeTag) {
+      logger.error(
+        "Could not find the required tag 'LTA-Data.workplaceSetup.toMachine.returnCode' in tagStore. Cannot publish MQTT message."
+      );
+      return;
+    }
+
+    // 3. Build the MQTT message payload
+    const vals = [
+      {
+        id: returnCodeTag.id,
+        val: returnCode,
+      },
+    ];
+
+    const mqttMessage: IPublishMessage = {
+      seq: 1, // Sequence number can be managed more dynamically if needed
+      vals: vals,
+    };
+
+    // 4. Publish the MQTT message
+    if (mqttClientInstance && mqttClientInstance.client.connected) {
+      const topic = config.databus.topic.write;
+      mqttClientInstance.publish(topic, mqttMessage as any); // Cast to any to match publish signature
+      logger.info(
+        `Published 'workplaceSetup' response data to MQTT topic: ${topic}`
+      );
+    } else {
+      logger.error(
+        "MQTT client is not connected. Cannot publish 'workplaceSetup' response data."
+      );
+    }
+  } catch (error) {
+    logger.error(
+      `Failed to parse workplaceSetup response body. Error: ${error}`
+    );
+  }
 }
