@@ -30,14 +30,12 @@ export const rapidaTypeIds = {
   orderHeadDataExchange: "11010",
   prodHeadDataExchange: "11020",
   jobHeadDataExchange: "11030",
-
-  // Custom/mock TypeIDs
-  accept: "99901",
-  workplaceSetup: "99902",
-  workplaceInfo: "99903",
-  versionInfo: "99904",
-  timeRequest: "99905",
-  info: "99906",
-  error: "99907",
-  errorText: "99908",
+  accept: "0",
+  workplaceSetup: "1",
+  workplaceInfo: "2",
+  versionInfo: "253",
+  timeRequest: "252",
+  info: "254",
+  error: "255",
+  errorText: "38",
 };

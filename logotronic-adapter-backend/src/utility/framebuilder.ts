@@ -29,19 +29,19 @@ function padAscii(str: string, targetLength: number): string {
 }
 
 /**
- * Verilen XML gövdesini ve parametreleri kullanarak Logotronic Rapida TCP
+ * Verilen XML veya binary gövdesini ve parametreleri kullanarak Logotronic Rapida TCP
  * isteği için tam bir binary çerçeve (Buffer) oluşturur.
  * Header parametreleri (version, transactionID, workplaceID) doğrudan tagStore'dan okunur.
  *
- * @param xmlBody Gönderilecek olan temizlenmemiş XML mesajı.
+ * @param body Gönderilecek olan XML mesajı (string) veya binary veri (Buffer).
  * @param params Sadece TypeID ve opsiyonel WorkplaceID'yi içerir.
  * @returns TCP soketi üzerinden gönderilmeye hazır bir Buffer nesnesi.
  */
 export function createLogotronicRequestFrame(
-  xmlBody: string,
+  body: string | Buffer,
   params: LogotronicFrameParams
 ): Buffer {
-  const HEADER_SIZE = 28;
+  const HEADER_SIZE = 24;
   const FOOTER_SIZE = 20;
 
   // --- 1. TagStore'dan Header Verilerini Oku ---
@@ -70,14 +70,19 @@ export function createLogotronicRequestFrame(
     );
   }
 
-  // --- 2. XML Hazırlama ve Uzunluk Hesaplama ---
-  const cleanXmlBody = xmlBody
-    .replace(/\r?\n|\r/g, "")
-    .replace(/>\s+</g, "><")
-    .trim();
+  // --- 2. Body Hazırlama ve Uzunluk Hesaplama ---
+  let bodyBuffer: Buffer;
+  if (typeof body === "string") {
+    const cleanXmlBody = body
+      .replace(/\r?\n|\r/g, "")
+      .replace(/>\s+</g, "><")
+      .trim();
+    bodyBuffer = Buffer.from(cleanXmlBody, "utf8");
+  } else {
+    bodyBuffer = body;
+  }
 
-  const xmlBuffer = Buffer.from(cleanXmlBody, "utf8");
-  const dataLength = xmlBuffer.length;
+  const dataLength = bodyBuffer.length;
   const totalLength = HEADER_SIZE + dataLength + FOOTER_SIZE;
   const requestFrame = Buffer.alloc(totalLength);
 
@@ -86,7 +91,7 @@ export function createLogotronicRequestFrame(
   let offset = 0;
 
   // ------------------------------------
-  // 3. HEADER Verilerinin Yazılması (28 byte)
+  // 3. HEADER Verilerinin Yazılması (24 byte)
   // ------------------------------------
 
   // version (4 byte, UInt32BE)
@@ -110,9 +115,9 @@ export function createLogotronicRequestFrame(
   offset += 4;
 
   // ------------------------------------
-  // 4. BODY Alanına XML Kopyalanması
+  // 4. BODY Alanına Veri Kopyalanması
   // ------------------------------------
-  xmlBuffer.copy(requestFrame, offset);
+  bodyBuffer.copy(requestFrame, offset);
   offset += dataLength;
 
   // ------------------------------------

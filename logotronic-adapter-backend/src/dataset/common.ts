@@ -7,3 +7,11 @@ export interface IMessage {
     val: boolean | string | number;
   }[];
 }
+
+export interface IPublishMessage {
+  seq: number;
+  vals: {
+    id: string;
+    val: boolean | string | number;
+  }[];
+}

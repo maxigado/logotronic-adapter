@@ -9,17 +9,11 @@ import { IMetadataMessage } from "../dataset/metadata";
 import { tagStoreInstance, ITagData } from "../store/tagstore";
 import { IStatusMessage } from "../dataset/status";
 import { statusStoreInstance } from "../store/statusstore";
+import { rapidaTypeIds } from "../dataset/typeid";
 
 // --- Tip Tanımları ---
 type LogotronicRequestBuilder = (message: any) => void;
 type LogotronicResponseHandler = (xmlResponse: string) => void;
-
-// XML parsing için minimal yardımcı fonksiyon (fast-xml-parser yerine)
-const getXmlTypeID = (xml: string): string | null => {
-  // <Response typeld="XXXXX"...> formatını arar
-  const match = xml.match(/<Response.*?typeld="(\d+)"/i);
-  return match ? match[1] : null;
-};
 
 // --- Logotronic Servis Importları (Builders - Request) ---
 import {
@@ -191,40 +185,37 @@ const serviceRequestTriggers: { [tagName: string]: LogotronicRequestBuilder } =
 // Aşama 2: Logotronic Response TypeID - Response Handler Eşleştirmesi
 const serviceResponseHandlers: { [typeId: string]: LogotronicResponseHandler } =
   {
-    // Telegram TypeID'leri (Logotronic Rapida Protocol.pdf'ten veya mock)
-    "10010": disconnectHandler, // XML Disconnect
-    "10011": operationalDataHandler, // XML OperationalData
-    "10012": userEventHandler, // XML UserEvent
-    "10015": assistantTaskHandler, // XML Assistant Task
-    "10030": assistantTaskQueryHandler, // XML Assistant Tasks (Query)
-    "10036": personnelHandler, // XML Personnel (Query)
-    "10037": userEventsQueryHandler, // XML UserEvents (Query)
-    "10038": createChangePersonnelHandler, // XML CreateOrChange Personnel
-    "10049": readRepetitionDataHandler, // XML ReadRepetitionData
-    "10050": saveRepetitionDataHandler, // XML SaveRepetitionData
-    "10060": jobListHandler, // XML JobList
-    "10061": jobPlanHandler, // XML PlanList
-    "10063": createJobHandler, // XML CreateJob
-    "10006": getOrderNoteHandler, // XML GetOrderNote
-    "10007": setOrderNoteHandler, // XML SetOrderNote
-    "10093": previewHandler, // XML preview (Option B)
-    "10008": bdePersonnelHandler, // XML BdePersonnel
-    "10165": deleteJobHandler, // XML DeleteJob
-    "10111": machineShiftsHandler, // XML MachineShifts
-    "10068": machinePlanListHandler, // XML Machine PlanList
-    "11010": orderHeadDataExchangeHandler, // XML OrderHeadDataExchange
-    "11020": prodHeadDataExchangeHandler, // XML PartOrderHeadDataExchange
-    "11030": jobHeadDataExchangeHandler, // XML PrintRunHeadDataExchange
-
-    // Kullanıcı tarafından sağlanan mock TypeID'ler
-    "99901": acceptHandler,
-    "99902": workplaceSetupHandler,
-    "99903": workplaceInfoHandler,
-    "99904": versionInfoHandler,
-    "99905": timeRequestHandler,
-    "99906": infoHandler,
-    "99907": errorHandler,
-    "99908": errorTextHandler,
+    [rapidaTypeIds.disconnect]: disconnectHandler,
+    [rapidaTypeIds.operationalData]: operationalDataHandler,
+    [rapidaTypeIds.userEvent]: userEventHandler,
+    [rapidaTypeIds.assistantTask]: assistantTaskHandler,
+    [rapidaTypeIds.assistantTaskQuery]: assistantTaskQueryHandler,
+    [rapidaTypeIds.personnel]: personnelHandler,
+    [rapidaTypeIds.userEventsQuery]: userEventsQueryHandler,
+    [rapidaTypeIds.createChangePersonnel]: createChangePersonnelHandler,
+    [rapidaTypeIds.readRepetitionData]: readRepetitionDataHandler,
+    [rapidaTypeIds.saveRepetitionData]: saveRepetitionDataHandler,
+    [rapidaTypeIds.jobList]: jobListHandler,
+    [rapidaTypeIds.jobPlan]: jobPlanHandler,
+    [rapidaTypeIds.createJob]: createJobHandler,
+    [rapidaTypeIds.getOrderNote]: getOrderNoteHandler,
+    [rapidaTypeIds.setOrderNote]: setOrderNoteHandler,
+    [rapidaTypeIds.preview]: previewHandler,
+    [rapidaTypeIds.bdePersonnel]: bdePersonnelHandler,
+    [rapidaTypeIds.deleteJob]: deleteJobHandler,
+    [rapidaTypeIds.machineShifts]: machineShiftsHandler,
+    [rapidaTypeIds.machinePlanList]: machinePlanListHandler,
+    [rapidaTypeIds.orderHeadDataExchange]: orderHeadDataExchangeHandler,
+    [rapidaTypeIds.prodHeadDataExchange]: prodHeadDataExchangeHandler,
+    [rapidaTypeIds.jobHeadDataExchange]: jobHeadDataExchangeHandler,
+    [rapidaTypeIds.accept]: acceptHandler,
+    [rapidaTypeIds.workplaceSetup]: workplaceSetupHandler,
+    [rapidaTypeIds.workplaceInfo]: workplaceInfoHandler,
+    [rapidaTypeIds.versionInfo]: versionInfoHandler,
+    [rapidaTypeIds.timeRequest]: timeRequestHandler,
+    [rapidaTypeIds.info]: infoHandler,
+    [rapidaTypeIds.error]: errorHandler,
+    [rapidaTypeIds.errorText]: errorTextHandler,
   };
 
 export let mqttClientInstance: MQTTClient;
@@ -295,6 +286,7 @@ function MQTTLister() {
       }
     } catch (error) {
       logger.error(`Error parsing MQTT message from topic ${topic}:`, error);
+      console.log(error);
     }
   });
 }
@@ -372,28 +364,85 @@ function processMachineMessage(message: any, topic: string) {
 
 // **Aşama 2: TCP Yanıtlarını İşleme**
 function processLogotricResponse(data: Buffer) {
-  // 1. Buffer'ı UTF-8 string'e çevir
-  const xmlResponse = data.toString("utf8");
-  logger.info("Processing Logotronic XML Response: " + xmlResponse);
+  const HEADER_SIZE = 24;
+  const FOOTER_SIZE = 20;
 
-  // 2. ve 3. XML'i parse et ve typeId'yi al
-  const typeId = getXmlTypeID(xmlResponse);
+  // 1. Check if buffer is long enough for the header
+  if (data.length < HEADER_SIZE) {
+    logger.error(
+      `Received data is too short to be a valid Logotronic frame. Length: ${data.length}`
+    );
+    return;
+  }
+
+  // 2. Read TypeID from the header
+  // Try reading as a string for "ACCEPT"
+  let typeId: string | undefined;
+  try {
+    const typeIdStr = data.toString("utf8", 16, 20).trim();
+    if (typeIdStr === "ACCE") {
+      // Checking for "ACCE" as it might be part of "ACCEPT"
+      const fullTypeIdStr = data.toString("utf8", 16, 22).trim();
+      if (fullTypeIdStr.startsWith("ACCEPT")) {
+        typeId = "ACCEPT";
+      }
+    }
+  } catch (e) {
+    // If string parsing fails, it's likely a numeric ID.
+  }
+
+  // If not "ACCEPT", read as a number
+  if (!typeId) {
+    try {
+      typeId = data.readUInt32BE(16).toString();
+    } catch (error) {
+      logger.error(
+        "Could not extract TypeID from Logotronic response header.",
+        error
+      );
+      return;
+    }
+  }
+
+  // 3. Read dataLength from the header (offset 20, UInt32BE)
+  const dataLength = data.readUInt32BE(20);
+
+  // 4. Check if the full frame is received
+  if (data.length < HEADER_SIZE + dataLength + FOOTER_SIZE) {
+    logger.warn(
+      `Incomplete frame received. Expected ${
+        HEADER_SIZE + dataLength + FOOTER_SIZE
+      }, got ${data.length}`
+    );
+    // TODO: Buffer incomplete data and wait for the rest.
+    return; // Return to avoid processing incomplete data
+  }
+
+  // 5. Extract the body
+  const bodyBuffer = data.slice(HEADER_SIZE, HEADER_SIZE + dataLength);
+
+  // For now, assume the body is XML as handlers expect a string.
+  // This might need to be changed later to fully support binary bodies.
+  const bodyString = bodyBuffer.toString("utf8");
+
+  logger.info(`Processing Logotronic Response. TypeID: ${typeId}`);
+  logger.debug("Response Body: " + bodyString);
 
   if (typeId) {
-    // 4. ve 5. TypeID'yi eşleştir ve ilgili Handler'ı çağır
     const handlerFunction = serviceResponseHandlers[typeId];
 
     if (handlerFunction) {
       logger.info(
         `Handler found for TypeID: ${typeId}. Calling Logotronic Response Handler.`
       );
-      handlerFunction(xmlResponse);
+      handlerFunction(bodyString); // Pass the body string to the handler
     } else {
       logger.warn(
         `No specific handler found for Logotronic Response TypeID: ${typeId}`
       );
     }
   } else {
-    logger.error("Could not extract TypeID from Logotronic XML response.");
+    // This case should not happen if we read the typeId from the header.
+    logger.error("Could not extract TypeID from Logotronic response header.");
   }
 }
