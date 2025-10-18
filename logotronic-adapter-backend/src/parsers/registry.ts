@@ -23,6 +23,10 @@ import {
   parseSetOrderNoteResponse,
   SetOrderNoteResponse,
 } from "./setOrderNote";
+import {
+  parseBdePersonnelResponse,
+  BdePersonnelResponse,
+} from "./bdePersonnel";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -33,6 +37,7 @@ export type DomainResponse =
   | SaveRepetitionDataResponse
   | CreateJobResponse
   | SetOrderNoteResponse
+  | BdePersonnelResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -49,6 +54,7 @@ const registry: Record<number, ParserFn> = {
   10050: parseSaveRepetitionDataResponse,
   10063: parseCreateJobResponse,
   10007: parseSetOrderNoteResponse,
+  10008: parseBdePersonnelResponse,
 };
 
 export function parseDomainResponse(
