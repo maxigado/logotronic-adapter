@@ -1,9 +1,13 @@
 // src/service/operationalData.ts
 import logger from "../../utility/logger";
-import { tcpClientInstance } from "../dataprocessing";
+import { tcpClientInstance, mqttClientInstance } from "../dataprocessing";
 import { rapidaTypeIds } from "../../dataset/typeid";
 import { tagStoreInstance } from "../../store/tagstore";
 import { createLogotronicRequestFrame } from "../../utility/framebuilder";
+import { safeParseXml } from "../../utility/xml";
+import { parseDomainResponse } from "../../parsers/registry";
+import { config } from "../../config/config";
+import { IPublishMessage } from "../../dataset/common";
 
 /**
  * Logotronic Request Builder for operationalData service.
@@ -154,9 +158,109 @@ export function logotronicRequestBuilder() {
 }
 
 export function logotronicResponseHandler(responseBody: Buffer) {
-  const xmlResponse = responseBody.toString("utf8");
+  if (!responseBody || responseBody.length === 0) {
+    logger.warn(
+      "operationalData response handler received empty buffer; ignoring."
+    );
+    return;
+  }
+
+  const xmlResponse = responseBody.toString("utf8").trim();
   logger.info(
     `Logotronic Response Handler is called for operationalData service with response: ${xmlResponse}`
   );
-  // Further processing of the response
+
+  const root = safeParseXml(xmlResponse);
+  if (!root) {
+    logger.error(
+      "operationalData response handler could not parse XML; aborting."
+    );
+    return;
+  }
+
+  const domain = parseDomainResponse(root);
+  if (!domain) {
+    logger.error(
+      "operationalData response handler could not extract domain/meta; aborting."
+    );
+    return;
+  }
+
+  if (domain.typeId !== parseInt(rapidaTypeIds.operationalData, 10)) {
+    logger.error(
+      `operationalData response typeId mismatch. Expected ${rapidaTypeIds.operationalData} but got ${domain.typeId}`
+    );
+    return;
+  }
+
+  // Cast to extended response type (contains productionOutput, energyLevel, energyMachine if present)
+  const op = domain as any;
+
+  // Tag definitions (need IDs) - use getTagDataByTagName not getValueByTagName
+  const typeIdTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.operationalData.toMachine.typeId"
+  );
+  const returnCodeTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.operationalData.toMachine.returnCode"
+  );
+  const errorReasonTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.operationalData.toMachine.errorReason"
+  );
+  const productionOutputTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.operationalData.toMachine.productionOutput"
+  );
+  const energyLevelTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.operationalData.toMachine.energyLevel"
+  );
+  const energyMachineTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.operationalData.toMachine.energyMachine"
+  );
+
+  if (!typeIdTag || !returnCodeTag) {
+    logger.error(
+      "operationalData response handler missing required tag definitions (typeId or returnCode); aborting publish."
+    );
+    return;
+  }
+
+  const vals: { id: string; val: string | number | boolean }[] = [
+    { id: typeIdTag.id, val: domain.typeId },
+    { id: returnCodeTag.id, val: domain.returnCode },
+  ];
+
+  if (domain.returnCode !== 1 && errorReasonTag) {
+    vals.push({ id: errorReasonTag.id, val: op.errorReason ?? "" });
+  }
+
+  if (productionOutputTag && op.productionOutput !== undefined) {
+    vals.push({ id: productionOutputTag.id, val: op.productionOutput });
+  }
+  if (energyLevelTag && op.energyLevel !== undefined) {
+    vals.push({ id: energyLevelTag.id, val: op.energyLevel });
+  }
+  if (energyMachineTag && op.energyMachine !== undefined) {
+    vals.push({ id: energyMachineTag.id, val: op.energyMachine });
+  }
+
+  if (vals.length === 0) {
+    logger.warn(
+      "operationalData response produced no tag values to publish (no matching tag IDs)."
+    );
+    return;
+  }
+
+  const mqttMessage: IPublishMessage = { seq: 1, vals };
+
+  try {
+    mqttClientInstance.publish(config.databus.topic.write, mqttMessage as any);
+    logger.info(
+      `operationalData response published to MQTT topic '${config.databus.topic.write}' with ${vals.length} values.`
+    );
+  } catch (err) {
+    logger.error(
+      `Failed to publish operationalData response to MQTT: ${
+        (err as Error).message
+      }`
+    );
+  }
 }
