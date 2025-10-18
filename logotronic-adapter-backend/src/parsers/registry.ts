@@ -40,6 +40,10 @@ import {
   parseProdHeadDataExchangeResponse,
   ProdHeadDataExchangeResponse,
 } from "./prodHeadDataExchange";
+import {
+  parseJobHeadDataExchangeResponse,
+  JobHeadDataExchangeResponse,
+} from "./jobHeadDataExchange";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -55,6 +59,7 @@ export type DomainResponse =
   | MachinePlanListResponse
   | OrderHeadDataExchangeResponse
   | ProdHeadDataExchangeResponse
+  | JobHeadDataExchangeResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -76,6 +81,7 @@ const registry: Record<number, ParserFn> = {
   10068: parseMachinePlanListResponse,
   11010: parseOrderHeadDataExchangeResponse,
   11020: parseProdHeadDataExchangeResponse,
+  11030: parseJobHeadDataExchangeResponse,
 };
 
 export function parseDomainResponse(
