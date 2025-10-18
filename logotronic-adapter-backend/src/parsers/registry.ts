@@ -60,6 +60,7 @@ import {
   parseReadRepetitionDataResponse,
   ReadRepetitionDataParsed,
 } from "./readRepetitionData";
+import { parseJobListResponse, JobListResponse } from "./jobList";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -80,6 +81,7 @@ export type DomainResponse =
   | AssistantTaskQueryResponse
   | UserEventsQueryResponse
   | ReadRepetitionDataParsed
+  | JobListResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -106,6 +108,7 @@ const registry: Record<number, ParserFn> = {
   10030: parseAssistantTaskQueryResponse,
   10037: parseUserEventsQueryResponse,
   10049: parseReadRepetitionDataResponse,
+  10060: parseJobListResponse,
 };
 
 export function parseDomainResponse(
