@@ -28,6 +28,10 @@ import {
   BdePersonnelResponse,
 } from "./bdePersonnel";
 import { parseDeleteJobResponse, DeleteJobResponse } from "./deleteJob";
+import {
+  parseMachinePlanListResponse,
+  MachinePlanListResponse,
+} from "./machinePlanList";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -40,6 +44,7 @@ export type DomainResponse =
   | SetOrderNoteResponse
   | BdePersonnelResponse
   | DeleteJobResponse
+  | MachinePlanListResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -58,6 +63,7 @@ const registry: Record<number, ParserFn> = {
   10007: parseSetOrderNoteResponse,
   10008: parseBdePersonnelResponse,
   10165: parseDeleteJobResponse,
+  10068: parseMachinePlanListResponse,
 };
 
 export function parseDomainResponse(
