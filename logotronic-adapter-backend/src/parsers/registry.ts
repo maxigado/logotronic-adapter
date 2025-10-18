@@ -56,6 +56,10 @@ import {
   parseUserEventsQueryResponse,
   UserEventsQueryResponse,
 } from "./userEventsQuery";
+import {
+  parseReadRepetitionDataResponse,
+  ReadRepetitionDataParsed,
+} from "./readRepetitionData";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -75,6 +79,7 @@ export type DomainResponse =
   | OperationalDataResponse
   | AssistantTaskQueryResponse
   | UserEventsQueryResponse
+  | ReadRepetitionDataParsed
   | ResponseMeta;
 
 type ParserFn = (
@@ -100,6 +105,7 @@ const registry: Record<number, ParserFn> = {
   10011: parseOperationalDataResponse,
   10030: parseAssistantTaskQueryResponse,
   10037: parseUserEventsQueryResponse,
+  10049: parseReadRepetitionDataResponse,
 };
 
 export function parseDomainResponse(
