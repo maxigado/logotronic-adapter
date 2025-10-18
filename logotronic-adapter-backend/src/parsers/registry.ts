@@ -48,6 +48,10 @@ import {
   parseOperationalDataResponse,
   OperationalDataResponse,
 } from "./operationalData";
+import {
+  parseAssistantTaskQueryResponse,
+  AssistantTaskQueryResponse,
+} from "./assistantTaskQuery";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -65,6 +69,7 @@ export type DomainResponse =
   | ProdHeadDataExchangeResponse
   | JobHeadDataExchangeResponse
   | OperationalDataResponse
+  | AssistantTaskQueryResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -88,6 +93,7 @@ const registry: Record<number, ParserFn> = {
   11020: parseProdHeadDataExchangeResponse,
   11030: parseJobHeadDataExchangeResponse,
   10011: parseOperationalDataResponse,
+  10030: parseAssistantTaskQueryResponse,
 };
 
 export function parseDomainResponse(
