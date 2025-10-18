@@ -4,6 +4,11 @@ import { tcpClientInstance } from "../dataprocessing";
 import { rapidaTypeIds } from "../../dataset/typeid";
 import { tagStoreInstance } from "../../store/tagstore";
 import { createLogotronicRequestFrame } from "../../utility/framebuilder";
+import { safeParseXml } from "../../utility/xml";
+import { parseDomainResponse } from "../../parsers/registry";
+import { mqttClientInstance } from "../dataprocessing";
+import { config } from "../../config/config";
+import { IPublishMessage } from "../../dataset/common";
 
 /**
  * Logotronic Request Builder for saveRepetitionData service.
@@ -85,9 +90,89 @@ export function logotronicRequestBuilder() {
 }
 
 export function logotronicResponseHandler(responseBody: Buffer) {
-  const xmlResponse = responseBody.toString("utf8");
-  logger.info(
-    `Logotronic Response Handler is called for saveRepetitionData service with response: ${xmlResponse}`
-  );
-  // Further processing of the response
+  try {
+    if (!responseBody || responseBody.length === 0) {
+      logger.warn("saveRepetitionData response handler received empty buffer.");
+      return;
+    }
+    const xmlResponse = responseBody.toString("utf8").trim();
+    logger.info(`saveRepetitionData raw XML response: ${xmlResponse}`);
+
+    const parsed = safeParseXml(xmlResponse);
+    if (!parsed) {
+      logger.error("saveRepetitionData response XML could not be parsed.");
+      return;
+    }
+
+    const domain = parseDomainResponse(parsed);
+    if (!domain || domain.typeId !== 10050) {
+      logger.error(
+        `saveRepetitionData response domain parsing failed or typeId mismatch. Parsed typeId: ${domain?.typeId}`
+      );
+      return;
+    }
+
+    const { typeId, returnCode, errorReason } = domain as any; // meta-only
+
+    const vals: { id: string; val: string | number | boolean }[] = [];
+
+    const typeIdTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.saveRepetitionData.toMachine.typeId"
+    );
+    if (typeIdTag) {
+      vals.push({ id: typeIdTag.id, val: typeId });
+    } else {
+      logger.warn(
+        "Tag not found: LTA-Data.saveRepetitionData.toMachine.typeId"
+      );
+    }
+
+    const returnCodeTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.saveRepetitionData.toMachine.returnCode"
+    );
+    if (returnCodeTag) {
+      vals.push({ id: returnCodeTag.id, val: returnCode });
+    } else {
+      logger.warn(
+        "Tag not found: LTA-Data.saveRepetitionData.toMachine.returnCode"
+      );
+    }
+
+    if (returnCode !== 1 && errorReason !== undefined) {
+      const errorReasonTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.saveRepetitionData.toMachine.errorReason"
+      );
+      if (errorReasonTag) {
+        vals.push({ id: errorReasonTag.id, val: errorReason });
+      } else {
+        logger.warn(
+          "Tag not found: LTA-Data.saveRepetitionData.toMachine.errorReason"
+        );
+      }
+    }
+
+    if (vals.length === 0) {
+      logger.warn(
+        "saveRepetitionData response produced no tag values to publish (no matching tag IDs)."
+      );
+      return;
+    }
+
+    const mqttMessage: IPublishMessage = { seq: 1, vals };
+    if (mqttClientInstance && mqttClientInstance.client.connected) {
+      const topic = config.databus.topic.write;
+      mqttClientInstance.publish(topic, mqttMessage as any);
+      logger.info(
+        `saveRepetitionData response published to MQTT topic '${topic}' with ${vals.length} values.`
+      );
+    } else {
+      logger.error(
+        "MQTT client not connected. Cannot publish saveRepetitionData response."
+      );
+    }
+  } catch (err) {
+    logger.error(
+      `Unhandled error in saveRepetitionData logotronicResponseHandler: ${err}`
+    );
+  }
 }
