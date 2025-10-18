@@ -10,12 +10,17 @@ import {
 import { parsePersonnelResponse, PersonnelResponse } from "./personnel";
 import { parseDisconnectResponse, DisconnectResponse } from "./disconnect";
 import { parseUserEventResponse, UserEventResponse } from "./userEvent";
+import {
+  parseCreateChangePersonnelResponse,
+  CreateChangePersonnelResponse,
+} from "./createChangePersonnel";
 
 export type DomainResponse =
   | AssistantTaskResponse
   | PersonnelResponse
   | DisconnectResponse
   | UserEventResponse
+  | CreateChangePersonnelResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -28,6 +33,7 @@ const registry: Record<number, ParserFn> = {
   10036: parsePersonnelResponse,
   10010: parseDisconnectResponse,
   10012: parseUserEventResponse,
+  10038: parseCreateChangePersonnelResponse,
 };
 
 export function parseDomainResponse(
