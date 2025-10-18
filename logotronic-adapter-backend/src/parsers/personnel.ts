@@ -11,6 +11,7 @@ export interface PersonnelEntry {
   loginWorkplaceId?: number;
   pause?: number;
   jpegDataBase64?: string;
+  password?: string;
 }
 
 export interface PersonnelResponse extends ResponseMeta {
@@ -47,6 +48,7 @@ export function parsePersonnelResponse(
       loginWorkplaceId: p["@_loginWorkplaceld"],
       pause: p["@_pause"],
       jpegDataBase64,
+      password: p["@_password"],
     };
   });
   return { ...meta, people };
