@@ -61,11 +61,11 @@ class TCPClient {
     setTimeout(() => {
       if (!this.isConnected) {
         logger.info(
-          `Client reconnecting to ${this.clientId} at ${this.host}:${this.port}`
+          `Client reconnecting to ${this.clientId} at ${this.host}:${this.port} (interval 10s).`
         );
         this.client.connect(this.port, this.host);
       }
-    }, 60000);
+    }, 10000); // 10 seconds
   }
 
   public connect() {

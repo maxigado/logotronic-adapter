@@ -15,6 +15,7 @@ class MQTTClient {
       username: username,
       password: password,
       clientId: clientId,
+      reconnectPeriod: 10000, // 10 seconds between automatic reconnect attempts
     });
 
     this.client.on("connect", () => {
@@ -28,7 +29,9 @@ class MQTTClient {
     });
 
     this.client.on("reconnect", () => {
-      logger.warn(`${clientId} is reconnecting to MQTT broker...`);
+      logger.warn(
+        `${clientId} reconnecting to MQTT broker (interval 10s configured).`
+      );
     });
 
     this.client.on("close", () => {
