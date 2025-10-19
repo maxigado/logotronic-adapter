@@ -1,9 +1,14 @@
 // src/service/getOrderNote.ts
 import logger from "../../utility/logger";
-import { tcpClientInstance } from "../dataprocessing";
+import { tcpClientInstance, mqttClientInstance } from "../dataprocessing";
+// merged import above
 import { rapidaTypeIds } from "../../dataset/typeid";
 import { tagStoreInstance } from "../../store/tagstore";
 import { createLogotronicRequestFrame } from "../../utility/framebuilder";
+import { safeParseXml } from "../../utility/xml";
+import { parseDomainResponse } from "../../parsers/registry";
+import { IPublishMessage } from "../../dataset/common";
+import { config } from "../../config/config";
 
 export function logotronicRequestBuilder() {
   logger.info("Logotronic Request Builder is called for getOrderNote service");
@@ -47,8 +52,106 @@ export function logotronicRequestBuilder() {
 }
 
 export function logotronicResponseHandler(responseBody: Buffer) {
-  const xmlResponse = responseBody.toString("utf8");
+  if (!responseBody || responseBody.length === 0) {
+    logger.warn(
+      "getOrderNote response handler received empty buffer; ignoring."
+    );
+    return;
+  }
+  const xmlResponse = responseBody.toString("utf8").trim();
   logger.info(
     `Logotronic Response Handler is called for getOrderNote service with response: ${xmlResponse}`
   );
+
+  const root = safeParseXml(xmlResponse);
+  if (!root) {
+    logger.error(
+      "getOrderNote response handler could not parse XML; aborting."
+    );
+    return;
+  }
+  const domain = parseDomainResponse(root);
+  if (!domain) {
+    logger.error(
+      "getOrderNote response handler could not extract meta/domain; aborting."
+    );
+    return;
+  }
+
+  const expectedTypeId = parseInt(rapidaTypeIds.getOrderNote, 10);
+  if (domain.typeId !== expectedTypeId) {
+    logger.error(
+      `getOrderNote response typeId mismatch. Expected ${expectedTypeId} but got ${domain.typeId}`
+    );
+    return;
+  }
+
+  const go = domain as any; // productionOutput / energyLevel / energyMachine
+
+  const typeIdTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.getOrderNote.toMachine.typeId"
+  );
+  const returnCodeTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.getOrderNote.toMachine.returnCode"
+  );
+  const errorReasonTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.getOrderNote.toMachine.errorReason"
+  );
+  const productionOutputTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.getOrderNote.toMachine.productionOutput"
+  );
+  const energyLevelTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.getOrderNote.toMachine.energyLevel"
+  );
+  const energyMachineTag = tagStoreInstance.getTagDataByTagName(
+    "LTA-Data.getOrderNote.toMachine.energyMachine"
+  );
+
+  if (!typeIdTag || !returnCodeTag) {
+    logger.error(
+      "getOrderNote response missing required meta tag IDs; aborting publish."
+    );
+    return;
+  }
+
+  const vals: { id: string; val: string | number | boolean }[] = [
+    { id: typeIdTag.id, val: domain.typeId },
+    { id: returnCodeTag.id, val: domain.returnCode },
+  ];
+
+  // Include errorReason ONLY when returnCode is 0 or -1
+  if (
+    (domain.returnCode === 0 || domain.returnCode === -1) &&
+    errorReasonTag &&
+    go.errorReason !== undefined
+  ) {
+    vals.push({ id: errorReasonTag.id, val: go.errorReason });
+  }
+
+  if (productionOutputTag && go.productionOutput !== undefined) {
+    vals.push({ id: productionOutputTag.id, val: go.productionOutput });
+  }
+  if (energyLevelTag && go.energyLevel !== undefined) {
+    vals.push({ id: energyLevelTag.id, val: go.energyLevel });
+  }
+  if (energyMachineTag && go.energyMachine !== undefined) {
+    vals.push({ id: energyMachineTag.id, val: go.energyMachine });
+  }
+
+  if (vals.length === 0) {
+    logger.warn(
+      "getOrderNote response produced no tag values to publish (no matching tag IDs)."
+    );
+    return;
+  }
+
+  const mqttMessage: IPublishMessage = { seq: 1, vals };
+  try {
+    mqttClientInstance.publish(config.databus.topic.write, mqttMessage as any);
+    logger.info(`getOrderNote response published with ${vals.length} values.`);
+  } catch (err) {
+    logger.error(
+      `Failed to publish getOrderNote response: ${(err as Error).message}`
+    );
+  }
 }
