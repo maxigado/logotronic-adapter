@@ -290,7 +290,7 @@
   <body>
     <header>
       <h1>Logotronic Adapter</h1>
-      <div id="last-update">Bekleniyor...</div>
+      <div id="last-update">Waiting...</div>
     </header>
     <main class="dashboard" id="dashboard">
       <!-- Panels will be injected by JS -->
@@ -365,7 +365,7 @@
               )}</div>
               ${
                 adapterStatus === "disconnected" && lastUpdateTime
-                  ? '<div class="warning">5 dakikadır veri yok.</div>'
+                  ? '<div class="warning">No data for 5 minutes.</div>'
                   : ""
               }
               <div class="subpanels">
