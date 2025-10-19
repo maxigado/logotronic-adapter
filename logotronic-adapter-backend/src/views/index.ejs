@@ -196,6 +196,95 @@
         text-align: center;
         opacity: 0.4;
       }
+      /* Preview Modal */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 30, 0.75);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(2px);
+      }
+      .modal {
+        width: 1200px;
+        height: 600px;
+        background: #12122a;
+        border: 2px solid #23233c;
+        border-radius: 14px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .modal header {
+        margin: 0;
+        padding: 10px 16px;
+        background: #23233c;
+        border: none;
+        box-shadow: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+      }
+      .modal header h2 {
+        margin: 0;
+        font-size: 0.95rem;
+        letter-spacing: 0.5px;
+      }
+      .modal-close {
+        background: transparent;
+        border: 1px solid #3d3d5f;
+        color: #fff;
+        cursor: pointer;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 0.7rem;
+        transition: 0.2s;
+      }
+      .modal-close:hover {
+        background: #3d3d5f;
+      }
+      .modal-content {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        padding: 12px 16px 18px;
+        background: linear-gradient(135deg, #18183a, #101028);
+      }
+      .modal-image-wrapper {
+        background: #000028;
+        border: 1px solid #23233c;
+        border-radius: 10px;
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: hidden;
+      }
+      .modal-image-wrapper span.side-label {
+        position: absolute;
+        top: 8px;
+        left: 10px;
+        background: #23233c;
+        padding: 2px 8px;
+        border-radius: 6px;
+        font-size: 0.55rem;
+        letter-spacing: 0.5px;
+        opacity: 0.85;
+      }
+      .modal-image-wrapper img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        animation: fade 0.4s ease;
+      }
+      .hidden {
+        display: none !important;
+      }
     </style>
   </head>
   <body>
@@ -206,6 +295,7 @@
     <main class="dashboard" id="dashboard">
       <!-- Panels will be injected by JS -->
     </main>
+    <div id="preview-modal-root" class="hidden"></div>
     <footer></footer>
 
     <script>
@@ -350,6 +440,65 @@
           <div class="skeleton"></div>
         </section>
       `;
+
+      // ---- Preview Images Modal Handling ----
+      const modalRoot = document.getElementById("preview-modal-root");
+      function closePreviewModal() {
+        modalRoot.classList.add("hidden");
+        modalRoot.innerHTML = "";
+      }
+      function showPreviewModal(payload) {
+        if (!payload || !payload.images || !payload.images.length) return;
+        const imgs = payload.images;
+        modalRoot.innerHTML = `
+          <div class="modal-overlay">
+            <div class="modal">
+              <header>
+                <h2>Preview Images</h2>
+                <button class="modal-close" id="preview-close-btn">CLOSE</button>
+              </header>
+              <div class="modal-content" style="grid-template-columns: repeat(${
+                imgs.length
+              },1fr)">
+                ${imgs
+                  .map(
+                    (img) => `
+                  <div class="modal-image-wrapper">
+                    <span class="side-label">Side: ${img.side ?? "N/A"}</span>
+                    <img src="${img.dataUrl}" alt="Preview Side ${
+                      img.side
+                    }" draggable="false" />
+                  </div>
+                `
+                  )
+                  .join("")}
+              </div>
+            </div>
+          </div>
+        `;
+        modalRoot.classList.remove("hidden");
+        document
+          .getElementById("preview-close-btn")
+          ?.addEventListener("click", closePreviewModal);
+        // Allow ESC to close
+        window.addEventListener("keydown", escListener);
+      }
+      function escListener(ev) {
+        if (ev.key === "Escape") {
+          closePreviewModal();
+          window.removeEventListener("keydown", escListener);
+        }
+      }
+      // Click outside to close
+      modalRoot.addEventListener("click", (e) => {
+        if (e.target.classList.contains("modal-overlay")) {
+          closePreviewModal();
+        }
+      });
+      socket.on("previewImages", (payload) => {
+        console.log("Received previewImages payload", payload);
+        showPreviewModal(payload);
+      });
     </script>
   </body>
 </html>

@@ -8,6 +8,7 @@ import { safeParseXml } from "../../utility/xml";
 import { parseDomainResponse } from "../../parsers/registry";
 import { IPublishMessage } from "../../dataset/common";
 import { config } from "../../config/config";
+import WebSocketManager from "../../utility/websocket";
 
 export function logotronicRequestBuilder() {
   logger.info("Logotronic Request Builder is called for preview service");
@@ -161,6 +162,28 @@ export function logotronicResponseHandler(responseBody: Buffer) {
         previewDomain.jpegData?.length || 0
       } JPEGData entries).`
     );
+    // Broadcast preview images (up to two) over WebSocket to frontend
+    if (entries.length) {
+      try {
+        const ws = WebSocketManager.getInstance();
+        const payload = {
+          timestamp: new Date().toISOString(),
+          images: entries.slice(0, 2).map((e: any) => ({
+            side: e.side,
+            // Provide ready-to-use data URL for <img src>
+            dataUrl: `data:image/jpeg;base64,${e.dataBase64}`,
+          })),
+        };
+        ws.broadcast("previewImages", payload);
+        logger.info(
+          `Broadcasted ${payload.images.length} preview image(s) over WebSocket.`
+        );
+      } catch (wsErr) {
+        logger.error(
+          `Failed to broadcast preview images: ${(wsErr as Error).message}`
+        );
+      }
+    }
   } catch (err) {
     logger.error(
       `Failed to publish preview response: ${(err as Error).message}`
