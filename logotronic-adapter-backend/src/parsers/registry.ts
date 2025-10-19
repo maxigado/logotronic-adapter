@@ -63,6 +63,10 @@ import {
 import { parseJobListResponse, JobListResponse } from "./jobList";
 import { parseJobPlanResponse, JobPlanResponse } from "./jobPlan";
 import { parsePreviewResponse, PreviewResponse } from "./preview";
+import {
+  parseMachineShiftsResponse,
+  MachineShiftsResponse,
+} from "./machineShifts";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -86,6 +90,7 @@ export type DomainResponse =
   | JobListResponse
   | JobPlanResponse
   | PreviewResponse
+  | MachineShiftsResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -115,6 +120,7 @@ const registry: Record<number, ParserFn> = {
   10060: parseJobListResponse,
   10061: parseJobPlanResponse,
   10093: parsePreviewResponse,
+  10111: parseMachineShiftsResponse,
 };
 
 export function parseDomainResponse(
