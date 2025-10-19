@@ -6,73 +6,350 @@
     <link rel="stylesheet" href="/style.css" />
     <script src="/socket.io/socket.io.js"></script>
     <style>
-      .status-item {
-        margin: 5px 0;
-        padding: 8px 10px;
-        border-radius: 4px;
-        font-family: monospace;
+      :root {
+        --clr-bg-body: #000028;
+        --clr-bg-panel: #23233c;
+        --clr-bg-subpanel: #000028;
+        --clr-text: #ffffff;
+        --clr-green: #018136;
+        --clr-red: #b81e31;
+        --clr-gray: #b3b3be;
+        --radius: 10px;
+        --transition: 0.25s ease;
       }
-      /* Durum bazlı renkler */
-      .connected {
-        background-color: #d4edda;
-        color: #155724;
-        border: 1px solid #c3e6cb;
+      * {
+        box-sizing: border-box;
       }
-      .disconnected {
-        background-color: #f8d7da;
-        color: #721c24;
-        border: 1px solid #f5c6cb;
+      body {
+        margin: 0;
+        padding: 0 20px 40px;
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        background: var(--clr-bg-body);
+        color: var(--clr-text);
       }
-      .error {
-        background-color: #fff3cd;
-        color: #856404;
-        border: 1px solid #ffeeba;
+      header {
+        background: var(--clr-bg-panel);
+        padding: 18px 24px;
+        margin: 0 -20px 30px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid #111145;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      }
+      header h1 {
+        font-size: 1.4rem;
+        letter-spacing: 0.5px;
+        margin: 0;
+        font-weight: 600;
+      }
+      #last-update {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+      .dashboard {
+        display: grid;
+        gap: 28px;
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      }
+      .panel {
+        background: var(--clr-bg-panel);
+        border: 1px solid #2f2f4d;
+        border-radius: var(--radius);
+        padding: 16px 18px 20px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        min-height: 170px;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+        overflow: hidden;
+      }
+      .panel::before {
+        /* subtle gradient top sheen */
+        content: "";
+        position: absolute;
+        left: 0;
+        right: 0;
+        top: 0;
+        height: 50px;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.08),
+          transparent
+        );
+        pointer-events: none;
+      }
+      .panel-title {
+        margin: 0 0 12px;
+        font-size: 1rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .status-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--clr-gray);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1),
+          0 0 6px rgba(0, 0, 0, 0.6) inset;
+        transition: var(--transition);
+      }
+      .status-dot.connected {
+        background: var(--clr-green);
+      }
+      .status-dot.disconnected {
+        background: var(--clr-red);
+      }
+      .status-dot.error {
+        background: var(--clr-gray);
+      }
+      .status-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .subpanels {
+        display: grid;
+        gap: 14px;
+        grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+        margin-top: 4px;
+      }
+      .subpanel {
+        background: var(--clr-bg-subpanel);
+        border: 1px solid #1e1e3a;
+        border-radius: var(--radius);
+        padding: 10px 12px 12px;
+        position: relative;
+        min-height: 92px;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        overflow: hidden;
+      }
+      .subpanel h3 {
+        margin: 0 0 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.4px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .status-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        font-weight: 500;
+        letter-spacing: 1px;
+        opacity: 0.85;
+      }
+      .timestamp,
+      .warning {
+        font-size: 0.65rem;
+        opacity: 0.6;
+        margin-top: 4px;
+        line-height: 1.2;
+      }
+      .warning {
+        color: var(--clr-red);
+        opacity: 0.85;
+      }
+      .flex-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .fade-in {
+        animation: fade 0.5s ease;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .skeleton {
+        background: #2d2d53;
+        border-radius: 6px;
+        height: 12px;
+        width: 60%;
+        animation: pulse 1.2s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.35;
+        }
+        50% {
+          opacity: 0.75;
+        }
+      }
+      footer {
+        margin-top: 40px;
+        font-size: 0.55rem;
+        text-align: center;
+        opacity: 0.4;
       }
     </style>
   </head>
   <body>
-    <h2>Sistem Durumları (WebSocket)</h2>
-    <div id="status-container">
-      <p>WebSocket bağlantısı bekleniyor...</p>
-    </div>
+    <header>
+      <h1>Logotronic Adapter</h1>
+      <div id="last-update">Bekleniyor...</div>
+    </header>
+    <main class="dashboard" id="dashboard">
+      <!-- Panels will be injected by JS -->
+    </main>
+    <footer></footer>
 
     <script>
-      // WebSocket bağlantısını başlat (aynı host ve port üzerinden)
       const socket = io();
-      const statusContainer = document.getElementById("status-container");
+      const dashboardEl = document.getElementById("dashboard");
+      const lastUpdateEl = document.getElementById("last-update");
+      let latestStatuses = {};
+      let lastUpdateTime = null;
+      const ADAPTER_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 
-      socket.on("statusUpdate", (data) => {
-        const statuses = data.status;
-        let html = "<ul>";
+      function humanizeKey(key) {
+        return (
+          key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, " $1")
+        );
+      }
 
-        // Status objesi üzerindeki tüm key-value çiftlerini döngüye al
-        for (const key in statuses) {
-          if (statuses.hasOwnProperty(key)) {
-            const statusValue = statuses[key];
-
-            // Key'i daha okunaklı hale getir (örn: databus -> Databus)
-            const displayKey =
-              key.charAt(0).toUpperCase() +
-              key.slice(1).replace(/([A-Z])/g, " $1");
-            const className = statusValue; // CSS sınıfı için: connected, disconnected, error
-
-            html += `
-              <li class="status-item ${className}">
-                <strong>${displayKey}</strong>: ${statusValue.toUpperCase()}
-              </li>
-            `;
-          }
+      function calcAdapterStatus() {
+        if (!lastUpdateTime) {
+          return "disconnected";
         }
+        const delta = Date.now() - lastUpdateTime;
+        return delta > ADAPTER_TIMEOUT_MS ? "disconnected" : "connected";
+      }
 
-        html += "</ul>";
-        statusContainer.innerHTML = html;
-        console.log("Status updated:", statuses);
-      });
+      function formatTimestamp(date) {
+        if (!date) return "—";
+        return date.toLocaleTimeString("tr-TR", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+      }
 
+      function statusClass(s) {
+        if (s === "connected") return "connected";
+        if (s === "disconnected") return "disconnected";
+        return "error";
+      }
+
+      function buildPanelHTML() {
+        const adapterStatus = calcAdapterStatus();
+        const machineStatus = latestStatuses.machine || "disconnected";
+        const logotronicStatus = latestStatuses.logotronic || "disconnected";
+        const connectorStatus = latestStatuses.connector || "disconnected";
+        const databusStatus = latestStatuses.databus || "disconnected";
+
+        return `
+          <section class="panel fade-in" aria-label="Machine Status">
+            <h2 class="panel-title"><span class="status-dot ${statusClass(
+              machineStatus
+            )}"></span> Machine</h2>
+            <div class="status-grid">
+              <div class="status-label">${machineStatus.toUpperCase()}</div>
+              <div class="timestamp">Güncelleme: ${formatTimestamp(
+                lastUpdateTime
+              )}</div>
+            </div>
+          </section>
+          <section class="panel fade-in" aria-label="Adapter Status">
+            <h2 class="panel-title"><span class="status-dot ${statusClass(
+              adapterStatus
+            )}"></span> Adapter</h2>
+            <div class="status-grid">
+              <div class="status-label">${adapterStatus.toUpperCase()}</div>
+              <div class="timestamp">Son veri: ${formatTimestamp(
+                lastUpdateTime
+              )}</div>
+              ${
+                adapterStatus === "disconnected" && lastUpdateTime
+                  ? '<div class="warning">5 dakikadır veri yok.</div>'
+                  : ""
+              }
+              <div class="subpanels">
+                <div class="subpanel">
+                  <h3><span class="status-dot ${statusClass(
+                    connectorStatus
+                  )}"></span> Connector</h3>
+                  <div class="status-label">${connectorStatus.toUpperCase()}</div>
+                </div>
+                <div class="subpanel">
+                  <h3><span class="status-dot ${statusClass(
+                    databusStatus
+                  )}"></span> Databus</h3>
+                  <div class="status-label">${databusStatus.toUpperCase()}</div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="panel fade-in" aria-label="Logotronic Status">
+            <h2 class="panel-title"><span class="status-dot ${statusClass(
+              logotronicStatus
+            )}"></span> Logotronic</h2>
+            <div class="status-grid">
+              <div class="status-label">${logotronicStatus.toUpperCase()}</div>
+              <div class="timestamp">Last Update: ${formatTimestamp(
+                lastUpdateTime
+              )}</div>
+            </div>
+          </section>
+        `;
+      }
+
+      function render() {
+        dashboardEl.innerHTML = buildPanelHTML();
+      }
+
+      function handleStatusUpdate(data) {
+        latestStatuses = data.status || {};
+        lastUpdateTime = new Date();
+        lastUpdateEl.textContent =
+          "Last Update: " + formatTimestamp(lastUpdateTime);
+        render();
+        console.log("Status updated:", latestStatuses);
+      }
+
+      socket.on("statusUpdate", handleStatusUpdate);
       socket.on("disconnect", () => {
-        statusContainer.innerHTML =
-          '<p class="status-item disconnected">BAĞLANTI KOPTU. Yeniden bağlanılıyor...</p>';
+        lastUpdateEl.textContent = "Connection lost – reconnecting...";
       });
+
+      // Timeout watcher for adapter status
+      setInterval(() => {
+        if (!lastUpdateTime) return; // nothing yet
+        const adapterStatus = calcAdapterStatus();
+        if (adapterStatus === "disconnected") {
+          render();
+        }
+      }, 10000); // check every 10s
+
+      // Initial skeleton UI before data arrives
+      dashboardEl.innerHTML = `
+        <section class="panel" aria-label="Machine Status">
+          <h2 class="panel-title"><span class="status-dot error"></span> Machine</h2>
+          <div class="skeleton"></div>
+        </section>
+        <section class="panel" aria-label="Adapter Status">
+          <h2 class="panel-title"><span class="status-dot error"></span> Adapter</h2>
+          <div class="skeleton"></div>
+        </section>
+        <section class="panel" aria-label="Logotronic Status">
+          <h2 class="panel-title"><span class="status-dot error"></span> Logotronic</h2>
+          <div class="skeleton"></div>
+        </section>
+      `;
     </script>
   </body>
 </html>
