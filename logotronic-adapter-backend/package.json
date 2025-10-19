@@ -8,7 +8,7 @@
   "main": "app.js",
   "scripts": {
     "start": "node dist/index.js",
-    "build": "tsc && xcopy src\\views dist\\views /E /I /Y",
+    "build": "tsc && mkdir -p dist/views && cp -R src/views/. dist/views/",
     "dev": "tsc && xcopy src\\views dist\\views /E /I /Y && nodemon dist/index.js --watch src --ext ts,js,json,ejs --exec \"tsc && xcopy src\\views dist\\views /E /I /Y && node dist/index.js\""
   },
   "devDependencies": {

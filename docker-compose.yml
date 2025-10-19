@@ -1,0 +1,20 @@
+version: "2.4"
+services:
+  logotronic-adapter-backend:
+    image: logotronic-adapter-backend
+    build: ./logotronic-adapter-backend
+    container_name: logotronic-adapter-backend
+    ports:
+      - 3000:3000
+    environment:
+      - TZ=Europe/Istanbul
+    networks:
+      - "proxy-redirect"
+    mem_limit: 2048mb
+    restart: always
+    volumes:
+      - "./logotronic-adapter-logs/:/logotronic-adapter-backend/dist/logs"
+networks:
+  proxy-redirect:
+    external: true
+    name: proxy-redirect
