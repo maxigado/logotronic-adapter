@@ -141,6 +141,7 @@ import {
 } from "./telegrams/workplaceSetup";
 
 let isMQTTListenerReady: boolean = false;
+let isMetaDataInitialized: boolean = false;
 // --- Servis Eşleştirmeleri ---
 
 // Aşama 1: MQTT Tetikleyici Tag - Request Builder Eşleştirmesi
@@ -305,15 +306,20 @@ function processStatusMessage(message: IStatusMessage, topic: string) {
 }
 
 function processMetadataMessage(message: IMetadataMessage, topic: string) {
-  logger.info(`Processing metadata message:`, message);
-  tagStoreInstance.initialize(message);
-  setTimeout(() => {
-    const updateRequestTopic = config.databus.topic.update;
-    const updateRequestMessage: any = { Path: "s7c1" };
-    mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
-    isMQTTListenerReady = true;
-    logger.info("MQTT Listener is now ready to process machine data messages.");
-  }, 10000);
+  if (!isMetaDataInitialized) {
+    logger.info(`Processing metadata message:`, message);
+    tagStoreInstance.initialize(message);
+    setTimeout(() => {
+      const updateRequestTopic = config.databus.topic.update;
+      const updateRequestMessage: any = { Path: "s7c1" };
+      mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
+      isMQTTListenerReady = true;
+      isMetaDataInitialized = true;
+      logger.info(
+        "MQTT Listener is now ready to process machine data messages."
+      );
+    }, 10000);
+  }
 }
 
 // **Aşama 1: MQTT Mesajlarını İşleme**
