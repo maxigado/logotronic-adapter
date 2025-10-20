@@ -333,15 +333,15 @@ function processMachineMessage(message: any, topic: string) {
   }
 
   // 4. Gelen mesajdaki her bir değeri kontrol et
-  const records = message?.records as any[];
-  if (!records || records.length === 0 || !records[0]?.vals) {
+  // Gelen mesaj formatı { vals: [...] } veya { records: [{ vals: [...] }] } olabilir.
+  const vals = (message?.vals || message?.records?.[0]?.vals) as any[];
+
+  if (!vals || !Array.isArray(vals)) {
     logger.warn(
-      "Received data message has no valid records to check triggers."
+      "Received data message has no valid 'vals' array to check triggers."
     );
     return;
   }
-
-  const vals = records[0].vals;
 
   for (const val of vals) {
     // Sadece boolean ve true olan sinyalleri kontrol et

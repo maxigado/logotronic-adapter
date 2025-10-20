@@ -110,17 +110,15 @@ class TagStore {
    * @param message MQTT'den gelen ham makine veri mesajı.
    */
   public updateValues(message: any): void {
-    const records = message?.records as IUpdateRecord[];
+    // Gelen mesaj formatı { vals: [...] } veya { records: [{ vals: [...] }] } olabilir.
+    const vals = (message?.vals || message?.records?.[0]?.vals) as IVal[];
 
-    if (!records || records.length === 0 || !records[0]?.vals) {
-      logger.warn("Received data message has no valid records to update.");
+    if (!vals || !Array.isArray(vals)) {
+      logger.warn("Received data message has no valid 'vals' array to update.");
       return;
     }
 
     let updatedCount = 0;
-
-    // İlk kayıttaki tüm değerleri işle
-    const vals = records[0].vals;
 
     vals.forEach((val) => {
       const tagData = this.tagIdMap.get(val.id);
@@ -140,7 +138,9 @@ class TagStore {
       }
     });
 
-    logger.debug(`TagStore: ${updatedCount} tag values updated.`);
+    if (updatedCount > 0) {
+      logger.info(`TagStore: ${updatedCount} tag values updated.`);
+    }
   }
 
   /**
