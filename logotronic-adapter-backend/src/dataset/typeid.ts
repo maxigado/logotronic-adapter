@@ -30,7 +30,7 @@ export const rapidaTypeIds = {
   orderHeadDataExchange: "11010",
   prodHeadDataExchange: "11020",
   jobHeadDataExchange: "11030",
-  accept: "0",
+  accept: "99999",
   workplaceSetup: "1",
   workplaceInfo: "2",
   versionInfo: "253",
