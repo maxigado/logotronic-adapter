@@ -337,7 +337,7 @@
 
       function buildPanelHTML() {
         const adapterStatus = calcAdapterStatus();
-        const machineStatus = latestStatuses.machine || "disconnected";
+        const machineStatus = latestStatuses.plc || "disconnected";
         const logotronicStatus = latestStatuses.logotronic || "disconnected";
         const connectorStatus = latestStatuses.connector || "disconnected";
         const databusStatus = latestStatuses.databus || "disconnected";
@@ -403,6 +403,7 @@
       }
 
       function handleStatusUpdate(data) {
+        console.log("Received statusUpdate:", data);
         latestStatuses = data.status || {};
         lastUpdateTime = new Date();
         lastUpdateEl.textContent =

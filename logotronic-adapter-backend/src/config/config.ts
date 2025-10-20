@@ -12,7 +12,7 @@ export const config = {
       write: "ie/d/j/simatic/v1/s7c1/dp/w/plc",
       metadata: "ie/m/j/simatic/v1/s7c1/dp",
       update: "ie/c/j/simatic/v1/updaterequest",
-      status: "ie/d/j/simatic/v1/s7c1/status",
+      status: "ie/s/j/simatic/v1/s7c1/status",
     },
   },
   logotronicserver: {
