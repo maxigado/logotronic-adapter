@@ -45,12 +45,19 @@ class StatusStore {
   }
 
   private normalizeStatus(rawStatus: string): ConnectionStatus {
-    if (rawStatus === "good") {
+    const lowerStatus = rawStatus.toLowerCase();
+    if (lowerStatus === "good" || lowerStatus === "available") {
       return "connected";
     }
-    if (rawStatus === "bad" || rawStatus === "error") {
+    if (
+      lowerStatus === "bad" ||
+      lowerStatus === "error" ||
+      lowerStatus === "unavailable"
+    ) {
       return "disconnected";
     }
+    // Bilinmeyen durumlar için bir varsayılan dönüş
+    logger.warn(`Unknown status value received: ${rawStatus}`);
     return "error";
   }
 
@@ -80,27 +87,35 @@ class StatusStore {
     }
   }
 
-  public updateMachineStatus(message: IStatusMessage): void {
+  public updateMachineStatus(message: any): void {
     let changed = false;
 
-    // S7 Connector durumu
-    const newConnectorStatus = this.normalizeStatus(message.connector.status);
-    if (this.store.connector !== newConnectorStatus) {
-      this.store.connector = newConnectorStatus;
-      changed = true;
-    }
-
-    // Bireysel Makine/PLC bağlantı durumları
-    message.connections.forEach((conn) => {
-      const normalizedStatus = this.normalizeStatus(conn.status);
-      if (this.store[conn.name] !== normalizedStatus) {
-        this.store[conn.name] = normalizedStatus;
+    // Gelen mesajın yapısını kontrol et
+    if (message.connector && message.connector.status) {
+      // Format 1 & 2: { connector: { status: '...' } }
+      const newConnectorStatus = this.normalizeStatus(message.connector.status);
+      if (this.store.connector !== newConnectorStatus) {
+        this.store.connector = newConnectorStatus;
         changed = true;
-        logger.debug(
-          `Machine Status Updated (${conn.name}): ${normalizedStatus}`
-        );
       }
-    });
+
+      // Format 1: { connector: {...}, connections: [...] }
+      if (message.connections && Array.isArray(message.connections)) {
+        message.connections.forEach((conn: any) => {
+          const normalizedStatus = this.normalizeStatus(conn.status);
+          if (this.store[conn.name] !== normalizedStatus) {
+            this.store[conn.name] = normalizedStatus;
+            changed = true;
+            logger.debug(
+              `Machine Status Updated (${conn.name}): ${normalizedStatus}`
+            );
+          }
+        });
+      }
+    } else {
+      logger.warn("Received status message with unknown format:", message);
+      return;
+    }
 
     if (changed) {
       this.pushUpdate();

@@ -140,6 +140,7 @@ import {
   logotronicResponseHandler as workplaceSetupHandler,
 } from "./telegrams/workplaceSetup";
 
+let isMQTTListenerReady: boolean = false;
 // --- Servis Eşleştirmeleri ---
 
 // Aşama 1: MQTT Tetikleyici Tag - Request Builder Eşleştirmesi
@@ -240,7 +241,7 @@ const dataprocessing = {
         mqttClientInstance.subscribe(config.databus.topic.metadata);
         setTimeout(() => {
           MQTTLister();
-        }, 1000);
+        }, 2000);
       });
 
       logger.info("Trying to connect Logotronic Server");
@@ -285,7 +286,6 @@ function MQTTLister() {
       }
     } catch (error) {
       logger.error(`Error parsing MQTT message from topic ${topic}:`, error);
-      console.log(error);
     }
   });
 }
@@ -311,51 +311,55 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
     const updateRequestTopic = config.databus.topic.update;
     const updateRequestMessage: any = { Path: "s7c1" };
     mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
-  }, 2000);
+    isMQTTListenerReady = true;
+    logger.info("MQTT Listener is now ready to process machine data messages.");
+  }, 10000);
 }
 
 // **Aşama 1: MQTT Mesajlarını İşleme**
 function processMachineMessage(message: any, topic: string) {
-  logger.debug(`Processing machine data message from topic ${topic}.`);
-  // 1. Gelen değerlerle TagStore'u güncelle
-  tagStoreInstance.updateValues(message);
+  if (isMQTTListenerReady) {
+    logger.debug(`Processing machine data message from topic ${topic}.`);
+    // 1. Gelen değerlerle TagStore'u güncelle
+    tagStoreInstance.updateValues(message);
 
-  const triggerTagsMap = new Map<string, LogotronicRequestBuilder>();
+    const triggerTagsMap = new Map<string, LogotronicRequestBuilder>();
 
-  // 2. ve 3. Eşleşme kontrolü için tüm trigger taglerinin ID'lerini bir Map'e önbelleğe al
-  for (const tagName in serviceRequestTriggers) {
-    const tagData: ITagData | undefined =
-      tagStoreInstance.getTagDataByTagName(tagName);
-    if (tagData) {
-      // Map'i Tag ID'sini key, Builder fonksiyonunu value olarak kullanacak şekilde oluştur
-      triggerTagsMap.set(tagData.id, serviceRequestTriggers[tagName]);
+    // 2. ve 3. Eşleşme kontrolü için tüm trigger taglerinin ID'lerini bir Map'e önbelleğe al
+    for (const tagName in serviceRequestTriggers) {
+      const tagData: ITagData | undefined =
+        tagStoreInstance.getTagDataByTagName(tagName);
+      if (tagData) {
+        // Map'i Tag ID'sini key, Builder fonksiyonunu value olarak kullanacak şekilde oluştur
+        triggerTagsMap.set(tagData.id, serviceRequestTriggers[tagName]);
+      }
     }
-  }
 
-  // 4. Gelen mesajdaki her bir değeri kontrol et
-  // Gelen mesaj formatı { vals: [...] } veya { records: [{ vals: [...] }] } olabilir.
-  const vals = (message?.vals || message?.records?.[0]?.vals) as any[];
+    // 4. Gelen mesajdaki her bir değeri kontrol et
+    // Gelen mesaj formatı { vals: [...] } veya { records: [{ vals: [...] }] } olabilir.
+    const vals = (message?.vals || message?.records?.[0]?.vals) as any[];
 
-  if (!vals || !Array.isArray(vals)) {
-    logger.warn(
-      "Received data message has no valid 'vals' array to check triggers."
-    );
-    return;
-  }
+    if (!vals || !Array.isArray(vals)) {
+      logger.warn(
+        "Received data message has no valid 'vals' array to check triggers."
+      );
+      return;
+    }
 
-  for (const val of vals) {
-    // Sadece boolean ve true olan sinyalleri kontrol et
-    if (val.val === true) {
-      const builderFunction = triggerTagsMap.get(val.id);
-      if (builderFunction) {
-        // 5. Eşleşme varsa, ilgili Builder fonksiyonunu çağır
-        const triggeringTagName = Array.from(
-          tagStoreInstance.getAllTagData()
-        ).find((tag) => tag.id === val.id)?.name;
-        logger.debug(
-          `Trigger found for Tag ID: ${val.id} (${triggeringTagName}). Calling Logotronic Request Builder.`
-        );
-        builderFunction(message);
+    for (const val of vals) {
+      // Sadece boolean ve true olan sinyalleri kontrol et
+      if (val.val === true) {
+        const builderFunction = triggerTagsMap.get(val.id);
+        if (builderFunction) {
+          // 5. Eşleşme varsa, ilgili Builder fonksiyonunu çağır
+          const triggeringTagName = Array.from(
+            tagStoreInstance.getAllTagData()
+          ).find((tag) => tag.id === val.id)?.name;
+          logger.debug(
+            `Trigger found for Tag ID: ${val.id} (${triggeringTagName}). Calling Logotronic Request Builder.`
+          );
+          builderFunction(message);
+        }
       }
     }
   }

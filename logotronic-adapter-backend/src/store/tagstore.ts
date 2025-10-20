@@ -101,7 +101,7 @@ class TagStore {
       });
     });
 
-    logger.debug(`TagStore successfully initialized with ${tagCount} tags.`);
+    logger.info(`TagStore successfully initialized with ${tagCount} tags.`);
   }
 
   /**

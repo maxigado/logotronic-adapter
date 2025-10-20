@@ -38,4 +38,4 @@ webSocketManager.start(server);
 setTimeout(() => {
   dataprocessing.initdataprocessing();
   statusStoreInstance.initializeWebSocketListeners();
-}, 1000);
+}, 2000);
