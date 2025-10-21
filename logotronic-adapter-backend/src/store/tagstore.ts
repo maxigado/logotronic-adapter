@@ -53,21 +53,13 @@ class TagStore {
    * Veri tipine göre kural tabanlı varsayılan başlangıç değerini döndürür.
    */
   private getInitialValue(dataType: string): TagValue {
-    const numericTypes = [
-      "UDInt",
-      "UInt",
-      "DInt",
-      "Char",
-      "LReal",
-      "ULInt",
-      "Byte",
-    ];
+    const numericTypes = ["UDInt", "UInt", "DInt", "LReal", "ULInt", "Byte"];
     const isNumeric = numericTypes.includes(dataType);
 
     if (isNumeric) {
       return 0; // Sayısal tipler için 0
-    } else if (dataType === "String") {
-      return ""; // String tipler için boş string
+    } else if (dataType === "String" || dataType === "Char") {
+      return ""; // String ve Char tipler için boş string
     } else if (dataType === "Bool") {
       return false; // Bool tipler için false
     }

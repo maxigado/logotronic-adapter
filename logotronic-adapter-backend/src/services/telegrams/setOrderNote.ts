@@ -29,10 +29,23 @@ export function logotronicRequestBuilder() {
     tagStoreInstance.getValueByTagName(
       "LTA-Data.setOrderNote.toServer.job.jobNo"
     ) || "";
-  const orderNote =
-    tagStoreInstance.getValueByTagName(
-      "LTA-Data.setOrderNote.toServer.orderNote"
-    ) || "Attention printer! This is an important comment";
+
+  // Collect OrderNote from multiple tags
+  const orderNoteParts: string[] = [];
+  let i = 0;
+  while (true) {
+    const part = tagStoreInstance.getValueByTagName(
+      `LTA-Data.setOrderNote.toServer.orderNote[${i}]`
+    );
+    // Stop if the tag doesn't exist or its value is null/undefined
+    if (part === undefined || part === null) {
+      break;
+    }
+    orderNoteParts.push(String(part));
+    i++;
+  }
+  // Join the parts to form the complete OrderNote string
+  const orderNote = orderNoteParts.join("") || "";
 
   const serviceXml = `
 <Request typeId="${typeId}">
