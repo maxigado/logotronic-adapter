@@ -119,15 +119,39 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     { id: returnCodeTag.id, val: domain.returnCode },
   ];
 
-  // Include errorReason ONLY when returnCode is 0 or -1
+  // Include errorReason ONLY when returnCode is not 1
   if (
-    (domain.returnCode === 0 || domain.returnCode === -1) &&
+    domain.returnCode !== 1 &&
     errorReasonTag &&
     go.errorReason !== undefined
   ) {
     vals.push({ id: errorReasonTag.id, val: go.errorReason });
   }
 
+  // Handle OrderNote text split into bytes
+  if (go.orderNote && typeof go.orderNote === "string") {
+    const orderNoteBuffer = Buffer.from(go.orderNote, "utf8");
+    for (let i = 0; i < Math.min(1601, orderNoteBuffer.length); i++) {
+      const byteTag = tagStoreInstance.getTagDataByTagName(
+        `LTA-Data.getOrderNote.toMachine.orderNote[${i}]`
+      );
+      if (byteTag) {
+        vals.push({ id: byteTag.id, val: orderNoteBuffer[i] });
+      }
+    }
+    // After writing bytes, write a null terminator or clear the next tag
+    // to signify the end of the string, if the string is shorter than the max length.
+    if (orderNoteBuffer.length < 1601) {
+      const nextTag = tagStoreInstance.getTagDataByTagName(
+        `LTA-Data.getOrderNote.toMachine.orderNote[${orderNoteBuffer.length}]`
+      );
+      if (nextTag) {
+        vals.push({ id: nextTag.id, val: 0 }); // Null terminator
+      }
+    }
+  }
+
+  // Handle legacy attribute-based properties
   if (productionOutputTag && go.productionOutput !== undefined) {
     vals.push({ id: productionOutputTag.id, val: go.productionOutput });
   }
@@ -138,9 +162,10 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     vals.push({ id: energyMachineTag.id, val: go.energyMachine });
   }
 
-  if (vals.length === 0) {
+  if (vals.length <= 2) {
+    // Only contains typeId and returnCode
     logger.warn(
-      "getOrderNote response produced no tag values to publish (no matching tag IDs)."
+      "getOrderNote response produced no data values to publish (no matching tag IDs for orderNote or other attributes)."
     );
     return;
   }
