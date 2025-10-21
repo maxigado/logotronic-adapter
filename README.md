@@ -189,7 +189,7 @@ logotronic-adapter-backend/
 2.  **Clone the repository:**
 
     ```bash
-    git clone <repository-url>
+    git clone https://oauth2:{ACCESSTOKEN}@code.siemens.com/technologyandinnovation/solution-engineering/ie-kb-logotronic-adapter.git
     cd logotronic-adapter/logotronic-adapter-backend
     ```
 
