@@ -81,15 +81,22 @@ class TagStore {
     this.tagNameMap.clear();
     this.tagIdMap.clear();
     let tagCount = 0;
+    const prefixToRemove = "Root.Objects.PLC_CT.DataBlocksGlobal.";
 
     metadata.connections.forEach((connection) => {
       connection.dataPoints.forEach((dp) => {
         dp.dataPointDefinitions.forEach((tagDefinition) => {
           const initialValue = this.getInitialValue(tagDefinition.dataType);
 
+          // Remove the prefix from the tag name if it exists
+          let tagName = tagDefinition.name;
+          if (tagName.startsWith(prefixToRemove)) {
+            tagName = tagName.substring(prefixToRemove.length);
+          }
+
           const tagData: ITagData = {
             id: tagDefinition.id,
-            name: tagDefinition.name,
+            name: tagName, // Use the potentially modified name
             dataType: tagDefinition.dataType,
             value: initialValue,
           };
