@@ -1,6 +1,6 @@
 import * as mqtt from "mqtt";
 import logger from "./logger";
-import { IMessage } from "../dataset/common";
+import { IMessage, IPublishMessage } from "../dataset/common";
 import { statusStoreInstance } from "../store/statusstore"; // StatusStore eklendi
 
 class MQTTClient {
@@ -57,7 +57,7 @@ class MQTTClient {
     });
   }
 
-  public publish(topic: string, message: IMessage) {
+  public publish(topic: string, message: IPublishMessage) {
     const data = JSON.stringify(message);
     this.client.publish(topic, data, (error) => {
       if (error) {

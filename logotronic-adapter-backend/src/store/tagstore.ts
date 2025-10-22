@@ -81,17 +81,20 @@ class TagStore {
     this.tagNameMap.clear();
     this.tagIdMap.clear();
     let tagCount = 0;
-    const prefixToRemove = "Root.Objects.PLC_CT.DataBlocksGlobal.";
 
     metadata.connections.forEach((connection) => {
       connection.dataPoints.forEach((dp) => {
         dp.dataPointDefinitions.forEach((tagDefinition) => {
           const initialValue = this.getInitialValue(tagDefinition.dataType);
 
-          // Remove the prefix from the tag name if it exists
+          // Normalize tag name: if the connector adds a prefix, strip everything
+          // before the first occurrence of 'LTA-Data.' so we keep consistent names
+          // like 'LTA-Data...'.
           let tagName = tagDefinition.name;
-          if (tagName.startsWith(prefixToRemove)) {
-            tagName = tagName.substring(prefixToRemove.length);
+          const marker = "LTA-Data.";
+          const idx = tagName.indexOf(marker);
+          if (idx !== -1) {
+            tagName = tagName.substring(idx);
           }
 
           const tagData: ITagData = {
