@@ -133,99 +133,99 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     if (!job) break;
     // Order fields
     const orderNoTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].order.no`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.order.no`
     );
     const orderNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].order.name`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.order.name`
     );
     const customerNoTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].order.customerNo`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.order.customerNo`
     );
     const customerNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].order.customerName`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.order.customerName`
     );
     const deliveryDateTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].order.deliveryDate`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.order.deliveryDate`
     );
     // Prod fields
     const prodNoTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].prod.no`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.prod.no`
     );
     const prodNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].prod.name`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.prod.name`
     );
     const prodPaperNoTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].prod.paperNo`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.prod.paperNo`
     );
     const prodPaperNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].prod.paperName`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.prod.paperName`
     );
     const prodPaperThicknessTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].prod.paperTickness`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.prod.paperTickness`
     ); // tag naming uses paperTickness
     const prodAmountTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].prod.amount`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.prod.amount`
     );
     // Job fields
     const jobNoTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.no`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.no`
     );
     const jobNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.name`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.name`
     );
     const jobAmountTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.amount`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.amount`
     );
     const jobMinAmountTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.minAmount`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.minAmount`
     );
     const jobMaxAmountTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.maxAmount`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.maxAmount`
     );
     const subsidyTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.subsidy`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.subsidy`
     );
     const subsidy2Tag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.subsidy2`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.subsidy2`
     );
     const copyTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.copy`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.copy`
     );
     const statusTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.status`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.status`
     );
     const setupTimeTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.setupTime`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.setupTime`
     );
     const printTimeTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.printTime`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.printTime`
     );
     const planStartTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.planStart`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.planStart`
     );
     const workplaceIdTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.workplaceId`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.workplaceId`
     );
     const reproTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.rePro`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.rePro`
     );
     const planningStateTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.planningState`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.planningState`
     );
     const priorityTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.priority`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.priority`
     );
     const startupWasteTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.startupWaste`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.startupWaste`
     );
     const grossCopiesTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.grossCopies`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.grossCopies`
     );
     const netCopiesTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.netCopies`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.netCopies`
     );
     const markOrDetectTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.jobList.toMachine.jobData[${jIdx}].job.markOrDetect`
+      `LTA-Data.jobList.toMachine.jobData.${jIdx}.job.markOrDetect`
     );
 
     // Push values if tags exist

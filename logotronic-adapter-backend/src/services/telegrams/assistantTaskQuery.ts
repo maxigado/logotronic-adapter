@@ -121,10 +121,10 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   for (let gIdx = 0; gIdx < 8; gIdx++) {
     const group = atq.groups?.[gIdx];
     const groupNoTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.assistantTaskQuery.toMachine.taskGroup[${gIdx}].no`
+      `LTA-Data.assistantTaskQuery.toMachine.taskGroup.${gIdx}.no`
     );
     const groupNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.assistantTaskQuery.toMachine.taskGroup[${gIdx}].name`
+      `LTA-Data.assistantTaskQuery.toMachine.taskGroup.${gIdx}.name`
     );
     if (group && groupNoTag) {
       vals.push({ id: groupNoTag.id, val: group.no });
@@ -136,13 +136,13 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     for (let tIdx = 0; tIdx < 8; tIdx++) {
       const task = group?.tasks?.[tIdx];
       const noTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.assistantTaskQuery.toMachine.taskGroup[${gIdx}].assistantTask[${tIdx}].no`
+        `LTA-Data.assistantTaskQuery.toMachine.taskGroup.${gIdx}.assistantTask.${tIdx}.no`
       );
       const textTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.assistantTaskQuery.toMachine.taskGroup[${gIdx}].assistantTask[${tIdx}].text`
+        `LTA-Data.assistantTaskQuery.toMachine.taskGroup.${gIdx}.assistantTask.${tIdx}.text`
       );
       const priorityTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.assistantTaskQuery.toMachine.taskGroup[${gIdx}].assistantTask[${tIdx}].priority`
+        `LTA-Data.assistantTaskQuery.toMachine.taskGroup.${gIdx}.assistantTask.${tIdx}.priority`
       );
       if (task && noTag) vals.push({ id: noTag.id, val: task.no });
       if (task && textTag) vals.push({ id: textTag.id, val: task.text });

@@ -122,7 +122,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   for (let gIdx = 0; gIdx < 8; gIdx++) {
     const group = uq.groups?.[gIdx];
     const groupNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].name`
+      `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.name`
     );
     if (group && groupNameTag && group.name !== undefined) {
       vals.push({ id: groupNameTag.id, val: group.name });
@@ -132,34 +132,34 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       const event = group?.userEvents?.[eIdx];
       if (!event) continue;
       const noTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].no`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.no`
       );
       const nameTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].name`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.name`
       );
       const typeTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].type`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.type`
       );
       const machineTimeTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].machineTime`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.machineTime`
       );
       const machineTimeNameTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].machineTimeName`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.machineTimeName`
       );
       const sendPolicyTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].sendPolicy`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.sendPolicy`
       );
       const sendPolicy2Tag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].sendPolicy2`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.sendPolicy2`
       );
       const blockingPolicyTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].blockingPolicy`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.blockingPolicy`
       );
       const interruptRunTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].interruptRun`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.interruptRun`
       );
       const speedReductionTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].userEvent[${eIdx}].speedReduction`
+        `LTA-Data.userEventsQuery.toMachine.eventGroup.${gIdx}.userEvent.${eIdx}.speedReduction`
       );
 
       if (noTag && event.no !== undefined)

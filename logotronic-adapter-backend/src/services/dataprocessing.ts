@@ -312,14 +312,14 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
     tagStoreInstance.initialize(message);
     setTimeout(() => {
       const updateRequestTopic = config.databus.topic.update;
-      const updateRequestMessage: any = { Path: "s7c1" };
+      const updateRequestMessage: any = { Path: "opcuac1" };
       mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
       isMQTTListenerReady = true;
       isMetaDataInitialized = true;
       logger.info(
         "MQTT Listener is now ready to process machine data messages."
       );
-    }, 10000);
+    }, 2000);
   }
 }
 
@@ -442,13 +442,24 @@ function processLogotricResponse(data: Buffer) {
       }
 
       // Floating point types
-      if (dt.toLowerCase().includes("real") || dt.toLowerCase().includes("float")) {
+      if (
+        dt.toLowerCase().includes("real") ||
+        dt.toLowerCase().includes("float")
+      ) {
         const n = Number(raw);
         return isNaN(n) ? 0 : n;
       }
 
       // Integer-like types
-      const intTypes = ["udint", "uint", "dint", "ulint", "byte", "char", "int"];
+      const intTypes = [
+        "udint",
+        "uint",
+        "dint",
+        "ulint",
+        "byte",
+        "char",
+        "int",
+      ];
       if (intTypes.some((t) => dt.toLowerCase().includes(t))) {
         const n = parseInt(String(raw), 10);
         return isNaN(n) ? 0 : n;
@@ -478,7 +489,10 @@ function processLogotricResponse(data: Buffer) {
         continue; // missing tag is allowed
       }
 
-      const converted = convertToTagType(frameValues[tagName], tagData.dataType);
+      const converted = convertToTagType(
+        frameValues[tagName],
+        tagData.dataType
+      );
       vals.push({ id: tagData.id, val: converted });
     } catch (err) {
       logger.error(`Error mapping frame field ${tagName} to tag ID: ${err}`);

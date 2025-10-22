@@ -121,9 +121,9 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     const day = ms.days?.[dIdx];
     if (!day) break;
     const dayValueTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.machineShifts.toMachine.machineShifts.shiftDay[${
+      `LTA-Data.machineShifts.toMachine.machineShifts.shiftDay.${
         dIdx + 1
-      }].value`
+      }.value`
     );
     if (dayValueTag && day.value !== undefined) {
       vals.push({ id: dayValueTag.id, val: day.value });
@@ -131,9 +131,9 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     for (let sIdx = 0; sIdx < 3; sIdx++) {
       const shift = day.shifts?.[sIdx];
       if (!shift) break;
-      const basePath = `LTA-Data.machineShifts.toMachine.machineShifts.shiftDay[${
+      const basePath = `LTA-Data.machineShifts.toMachine.machineShifts.shiftDay.${
         dIdx + 1
-      }].shift[${sIdx + 1}]`;
+      }.shift.${sIdx + 1}`;
       const shiftNoTag = tagStoreInstance.getTagDataByTagName(
         `${basePath}.shiftNo`
       );

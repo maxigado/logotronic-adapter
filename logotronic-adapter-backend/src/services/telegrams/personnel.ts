@@ -129,37 +129,37 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     if (!person) break; // stop when no more entries
 
     const internalIdTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].internalId`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.internalId`
     );
     const idTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].id`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.id`
     );
     const firstNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].firstName`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.firstName`
     );
     const lastNameTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].lastName`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.lastName`
     );
     const jobTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].job`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.job`
     );
     const passwordTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].password`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.password`
     );
     const loginAsTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].loginAs`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.loginAs`
     );
     const loginTimeTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].loginTime`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.loginTime`
     );
     const loginWorkplaceIdTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].loginWorkplaceId`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.loginWorkplaceId`
     );
     const breakTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].break`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.break`
     );
     const jpegDataTag = tagStoreInstance.getTagDataByTagName(
-      `LTA-Data.personnel.toMachine.personal[${pIdx}].JPEGData`
+      `LTA-Data.personnel.toMachine.personal.${pIdx}.JPEGData`
     );
 
     if (internalIdTag && person.internalId !== undefined)

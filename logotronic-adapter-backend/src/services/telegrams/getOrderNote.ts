@@ -133,7 +133,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     const orderNoteBuffer = Buffer.from(go.orderNote, "utf8");
     for (let i = 0; i < Math.min(1601, orderNoteBuffer.length); i++) {
       const byteTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.getOrderNote.toMachine.orderNote[${i}]`
+        `LTA-Data.getOrderNote.toMachine.orderNote.${i}`
       );
       if (byteTag) {
         vals.push({ id: byteTag.id, val: orderNoteBuffer[i] });
@@ -143,7 +143,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     // to signify the end of the string, if the string is shorter than the max length.
     if (orderNoteBuffer.length < 1601) {
       const nextTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.getOrderNote.toMachine.orderNote[${orderNoteBuffer.length}]`
+        `LTA-Data.getOrderNote.toMachine.orderNote.${orderNoteBuffer.length}`
       );
       if (nextTag) {
         vals.push({ id: nextTag.id, val: 0 }); // Null terminator
