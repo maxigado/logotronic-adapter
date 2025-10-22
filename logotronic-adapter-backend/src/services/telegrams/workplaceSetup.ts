@@ -33,7 +33,7 @@ export function logotronicRequestBuilder() {
     ) as number) || 0;
 
   // Create binary body
-  const bodyBuffer = Buffer.alloc(46 + workplaceDataLength);
+  const bodyBuffer = Buffer.alloc(47 + workplaceDataLength);
 
   let offset = 0;
 
@@ -54,11 +54,7 @@ export function logotronicRequestBuilder() {
   offset += 4;
 
   // Write workplaceData
-  // Assuming workplaceData is a single byte for now.
-  // If it can be a buffer, this part needs to be adjusted.
-  if (workplaceDataLength > 0) {
-    bodyBuffer.writeUInt8(workplaceData, offset);
-  }
+  bodyBuffer.writeUInt8(workplaceData, offset);
 
   const requestBuffer = createLogotronicRequestFrame(bodyBuffer, {
     requestType: parseInt(typeId.toString(), 10),
