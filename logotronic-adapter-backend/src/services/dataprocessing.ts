@@ -373,7 +373,7 @@ function processMachineMessage(message: any, topic: string) {
 
 // **Aşama 2: TCP Yanıtlarını İşleme**
 function processLogotricResponse(data: Buffer) {
-  const HEADER_SIZE = 20;
+  const HEADER_SIZE = 24;
   const FOOTER_SIZE = 20;
 
   // 1. Check if buffer is long enough for the header
@@ -389,7 +389,7 @@ function processLogotricResponse(data: Buffer) {
 
   if (!typeId) {
     try {
-      typeId = data.readUInt32BE(12).toString();
+      typeId = data.readUInt32BE(16).toString();
     } catch (error) {
       logger.error(
         "Could not extract TypeID from Logotronic response header.",
@@ -400,7 +400,7 @@ function processLogotricResponse(data: Buffer) {
   }
 
   // 3. Read dataLength from the header (offset 16, UInt32BE)
-  const dataLength = data.readUInt32BE(16);
+  const dataLength = data.readUInt32BE(20);
 
   // 4. Check if the full frame is received
   if (data.length < HEADER_SIZE + dataLength + FOOTER_SIZE) {
