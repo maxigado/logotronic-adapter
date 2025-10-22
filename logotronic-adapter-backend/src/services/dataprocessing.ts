@@ -354,7 +354,7 @@ function processMachineMessage(message: any, topic: string) {
 
     for (const val of vals) {
       // Sadece boolean ve true olan sinyalleri kontrol et
-      if (val.val === true) {
+      if (val.val === true || val.val === 1 || val.val === "1") {
         const builderFunction = triggerTagsMap.get(val.id);
         if (builderFunction) {
           // 5. Eşleşme varsa, ilgili Builder fonksiyonunu çağır

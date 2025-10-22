@@ -83,6 +83,7 @@ class TCPClient {
       logger.info(
         `Sent a Logotronic request with length: ${message.length} bytes.`
       );
+      logger.info(`Sent a Logotronic request: ${message.toString("hex")}`);
     } else {
       logger.error(
         `Client is not connected to ${this.clientId}. Cannot send message.`
