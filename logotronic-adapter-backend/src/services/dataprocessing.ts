@@ -312,7 +312,7 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
     tagStoreInstance.initialize(message);
     setTimeout(() => {
       const updateRequestTopic = config.databus.topic.update;
-      const updateRequestMessage: any = { Path: "opcuac1" };
+      const updateRequestMessage: any = { Path: "s7c1" };
       mqttClientInstance.publish(updateRequestTopic, updateRequestMessage);
       isMQTTListenerReady = true;
       isMetaDataInitialized = true;
