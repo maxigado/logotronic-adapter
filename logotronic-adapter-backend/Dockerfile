@@ -1,6 +1,6 @@
 FROM node:25.0.0-alpine3.21
 
-WORKDIR /tubtraceability-backend
+WORKDIR /logotronic-adapter-backend
 
 COPY package.json .
 
