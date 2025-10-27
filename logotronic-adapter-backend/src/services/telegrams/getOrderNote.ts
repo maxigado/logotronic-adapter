@@ -128,26 +128,27 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     vals.push({ id: errorReasonTag.id, val: go.errorReason });
   }
 
-  // Handle OrderNote text split into bytes
+  // Handle OrderNote text mapped into 2 chunks
+  // Chunk 0: first 254 characters -> orderNote[0]
+  // Chunk 1: next 254 characters (positions 254..507) -> orderNote[1]
   if (go.orderNote && typeof go.orderNote === "string") {
-    const orderNoteBuffer = Buffer.from(go.orderNote, "utf8");
-    for (let i = 0; i < Math.min(1601, orderNoteBuffer.length); i++) {
-      const byteTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.getOrderNote.toMachine.orderNote[${i}]`
-      );
-      if (byteTag) {
-        vals.push({ id: byteTag.id, val: orderNoteBuffer[i] });
-      }
+    const text: string = go.orderNote;
+    const chunk0 = text.substring(0, 254);
+    const chunk1 = text.length > 254 ? text.substring(254, 508) : "";
+
+    const tag0 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[0]"
+    );
+    const tag1 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[1]"
+    );
+
+    if (tag0) {
+      vals.push({ id: tag0.id, val: chunk0 });
     }
-    // After writing bytes, write a null terminator or clear the next tag
-    // to signify the end of the string, if the string is shorter than the max length.
-    if (orderNoteBuffer.length < 1601) {
-      const nextTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.getOrderNote.toMachine.orderNote[${orderNoteBuffer.length}]`
-      );
-      if (nextTag) {
-        vals.push({ id: nextTag.id, val: 0 }); // Null terminator
-      }
+    if (tag1) {
+      // Always publish to tag1, even if empty, to clear any previous value.
+      vals.push({ id: tag1.id, val: chunk1 });
     }
   }
 

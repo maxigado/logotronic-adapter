@@ -6,6 +6,7 @@ import TCPClient from "../utility/tcp";
 import logger from "../utility/logger";
 import { IMetadataMessage } from "../dataset/metadata";
 import { tagStoreInstance, ITagData } from "../store/tagstore";
+import { IPublishMessage } from "../dataset/common";
 import { IStatusMessage } from "../dataset/status";
 import { statusStoreInstance } from "../store/statusstore";
 import { rapidaTypeIds } from "../dataset/typeid";
@@ -318,7 +319,7 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
       logger.info(
         "MQTT Listener is now ready to process machine data messages."
       );
-    }, 10000);
+    }, 2000);
   }
 }
 
@@ -376,68 +377,164 @@ function processLogotricResponse(data: Buffer) {
   const HEADER_SIZE = 24;
   const FOOTER_SIZE = 20;
 
-  // 1. Check if buffer is long enough for the header
-  if (data.length < HEADER_SIZE) {
+  // Basic length sanity check
+  if (data.length < HEADER_SIZE + FOOTER_SIZE) {
     logger.error(
       `Received data is too short to be a valid Logotronic frame. Length: ${data.length}`
     );
     return;
   }
 
-  // 2. Read TypeID from the header
-  let typeId: string | undefined;
-
-  if (!typeId) {
-    try {
-      typeId = data.readUInt32BE(16).toString();
-    } catch (error) {
-      logger.error(
-        "Could not extract TypeID from Logotronic response header.",
-        error
-      );
-      return;
-    }
-  }
-
-  // 3. Read dataLength from the header (offset 16, UInt32BE)
+  // Read fields from header (first 24 bytes)
+  // Offsets per spec
+  const version = data.readUInt32BE(0);
+  const transactionID = data.readUInt32BE(4);
+  const workplaceID = data.toString("ascii", 8, 16).replace(/\0/g, "");
+  const requestType = data.readUInt32BE(16);
   const dataLength = data.readUInt32BE(20);
 
-  // 4. Check if the full frame is received
+  // Ensure we have the full frame (header + body + footer)
   if (data.length < HEADER_SIZE + dataLength + FOOTER_SIZE) {
     logger.warn(
       `Incomplete frame received. Expected ${
         HEADER_SIZE + dataLength + FOOTER_SIZE
       }, got ${data.length}`
     );
-    // TODO: Buffer incomplete data and wait for the rest.
-    return; // Return to avoid processing incomplete data
+    return;
   }
 
-  // 5. Extract the body
+  // Footer (last 20 bytes after the body)
+  const footerOffset = HEADER_SIZE + dataLength;
+  const eDataLength = data.readUInt32BE(footerOffset);
+  const eRequestType = data.readUInt32BE(footerOffset + 4);
+  const eWorkplaceID = data
+    .toString("ascii", footerOffset + 8, footerOffset + 16)
+    .replace(/\0/g, "");
+  const eTransactionID = data.readUInt32BE(footerOffset + 16);
+
+  // Build mapping of tag names -> extracted values
+  const frameValues: { [tag: string]: string | number } = {
+    "LTA-Data.frame.response.header.version": version,
+    "LTA-Data.frame.response.header.transactionID": transactionID,
+    "LTA-Data.frame.response.header.workPlaceID": workplaceID,
+    "LTA-Data.frame.response.header.requestType": requestType,
+    "LTA-Data.frame.response.header.dataLength": dataLength,
+    "LTA-Data.frame.response.endHeader.dataLength": eDataLength,
+    "LTA-Data.frame.response.endHeader.requestType": eRequestType,
+    "LTA-Data.frame.response.endHeader.workPlaceId": eWorkplaceID,
+    "LTA-Data.frame.response.endHeader.transactionId": eTransactionID,
+  };
+
+  // Helper: convert a raw value to the expected tag data type
+  const convertToTagType = (
+    raw: any,
+    dataType: string | undefined
+  ): string | number | boolean => {
+    if (raw === null || raw === undefined) return raw;
+    const dt = (dataType || "").toString();
+
+    try {
+      // Boolean
+      if (dt === "Bool") {
+        if (raw === true || raw === 1 || raw === "1" || raw === "true")
+          return true;
+        return false;
+      }
+
+      // Floating point types
+      if (
+        dt.toLowerCase().includes("real") ||
+        dt.toLowerCase().includes("float")
+      ) {
+        const n = Number(raw);
+        return isNaN(n) ? 0 : n;
+      }
+
+      // Integer-like types
+      const intTypes = [
+        "udint",
+        "uint",
+        "dint",
+        "ulint",
+        "byte",
+        "char",
+        "int",
+      ];
+      if (intTypes.some((t) => dt.toLowerCase().includes(t))) {
+        const n = parseInt(String(raw), 10);
+        return isNaN(n) ? 0 : n;
+      }
+
+      // String
+      if (dt === "String") {
+        return String(raw);
+      }
+
+      // Fallback: return as-is
+      return raw;
+    } catch (e) {
+      logger.error(`Conversion error for dataType ${dataType}: ${e}`);
+      return raw;
+    }
+  };
+
+  // Build MQTT vals array using tag IDs from tagStore (IPublishMessage: id + val)
+  const vals: { id: string; val: string | number | boolean }[] = [];
+
+  for (const tagName of Object.keys(frameValues)) {
+    try {
+      const tagData = tagStoreInstance.getTagDataByTagName(tagName);
+      if (!tagData) {
+        logger.debug(`No tag defined for frame field: ${tagName}`);
+        continue; // missing tag is allowed
+      }
+
+      const converted = convertToTagType(
+        frameValues[tagName],
+        tagData.dataType
+      );
+      vals.push({ id: tagData.id, val: converted });
+    } catch (err) {
+      logger.error(`Error mapping frame field ${tagName} to tag ID: ${err}`);
+    }
+  }
+
+  if (vals.length > 0) {
+    const mqttMessage: IPublishMessage = { seq: 0, vals };
+    try {
+      const topic = config.databus.topic.write;
+      if (mqttClientInstance && mqttClientInstance.client.connected) {
+        // mqtt.publish expects IMessage; pass as any to match existing utility signature
+        mqttClientInstance.publish(topic, mqttMessage as any);
+        logger.info(
+          `Published ${vals.length} frame fields to MQTT topic ${topic}`
+        );
+      } else {
+        logger.warn("MQTT client not connected - cannot publish frame fields");
+      }
+    } catch (err) {
+      logger.error(`Failed to publish frame fields to MQTT: ${err}`);
+    }
+  }
+
+  // Extract body buffer and forward to handler based on typeId (requestType)
+  const typeId = requestType.toString();
   const bodyBuffer = data.slice(HEADER_SIZE, HEADER_SIZE + dataLength);
 
-  // For now, assume the body is XML as handlers expect a string.
-  // This might need to be changed later to fully support binary bodies.
-  const bodyString = bodyBuffer.toString("utf8");
-
-  logger.info(`Processing Logotronic Response. TypeID: ${typeId}`);
-  logger.info("Response Body: " + bodyString);
-
+  // Call existing handler if available
   if (typeId) {
     const handlerFunction = serviceResponseHandlers[typeId];
-
     if (handlerFunction) {
-      logger.info(
-        `Handler found for TypeID: ${typeId}. Calling Logotronic Response Handler.`
-      );
-      handlerFunction(bodyBuffer); // Pass the body string to the handler
+      logger.info(`Handler found for TypeID: ${typeId}. Calling handler.`);
+      try {
+        handlerFunction(bodyBuffer);
+      } catch (err) {
+        logger.error(`Error in response handler for TypeID ${typeId}: ${err}`);
+      }
     } else {
-      logger.warn(
-        `No specific handler found for Logotronic Response TypeID: ${typeId}`
-      );
+      logger.debug(`No handler registered for TypeID: ${typeId}`);
     }
   } else {
-    // This case should not happen if we read the typeId from the header.
-    logger.error("Could not extract TypeID from Logotronic response header.");
+    logger.error("Could not determine TypeID from response header.");
   }
 }

@@ -17,6 +17,6 @@ export const config = {
   },
   logotronicserver: {
     host: "localhost",
-    port: 64002,
+    port: 64001,
   },
 };

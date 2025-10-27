@@ -334,10 +334,11 @@ Offset (after body)
 
 ### 13.2 TCP Frame Layout (Response)
 
-Header (20 bytes):
+Header (24 bytes):
 
 ```
 Offset  Size  Field
+0       4     version (UInt32BE)
 0       4     transactionID (UInt32BE)
 4       8     workplaceID (ASCII, padded / null-filled)
 8       4     requestType (UInt32BE)
