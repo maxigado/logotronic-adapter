@@ -135,6 +135,14 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     const text: string = go.orderNote;
     const chunk0 = text.substring(0, 254);
     const chunk1 = text.length > 254 ? text.substring(254, 508) : "";
+    const chunk2 = text.length > 508 ? text.substring(508, 762) : "";
+    const chunk3 = text.length > 762 ? text.substring(762, 1016) : "";
+    const chunk4 = text.length > 1016 ? text.substring(1016, 1270) : "";
+    const chunk5 = text.length > 1270 ? text.substring(1270, 1524) : "";
+    const chunk6 = text.length > 1524 ? text.substring(1524, 1778) : "";
+    const chunk7 = text.length > 1778 ? text.substring(1778, 2032) : "";
+    const chunk8 = text.length > 2032 ? text.substring(2032, 2286) : "";
+    const chunk9 = text.length > 2286 ? text.substring(2286, 2540) : "";
 
     const tag0 = tagStoreInstance.getTagDataByTagName(
       "LTA-Data.getOrderNote.toMachine.orderNote[0]"
@@ -142,13 +150,60 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     const tag1 = tagStoreInstance.getTagDataByTagName(
       "LTA-Data.getOrderNote.toMachine.orderNote[1]"
     );
+    const tag2 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[2]"
+    );
+    const tag3 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[3]"
+    );
+    const tag4 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[4]"
+    );
+    const tag5 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[5]"
+    );
+    const tag6 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[6]"
+    );
+    const tag7 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[7]"
+    );
+    const tag8 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[8]"
+    );
+    const tag9 = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.getOrderNote.toMachine.orderNote[9]"
+    );
 
     if (tag0) {
       vals.push({ id: tag0.id, val: chunk0 });
     }
     if (tag1) {
-      // Always publish to tag1, even if empty, to clear any previous value.
       vals.push({ id: tag1.id, val: chunk1 });
+    }
+    if (tag2) {
+      vals.push({ id: tag2.id, val: chunk2 });
+    }
+    if (tag3) {
+      vals.push({ id: tag3.id, val: chunk3 });
+    }
+    if (tag4) {
+      vals.push({ id: tag4.id, val: chunk4 });
+    }
+    if (tag5) {
+      vals.push({ id: tag5.id, val: chunk5 });
+    }
+    if (tag6) {
+      vals.push({ id: tag6.id, val: chunk6 });
+    }
+    if (tag7) {
+      vals.push({ id: tag7.id, val: chunk7 });
+    }
+    if (tag8) {
+      vals.push({ id: tag8.id, val: chunk8 });
+    }
+    if (tag9) {
+      vals.push({ id: tag9.id, val: chunk9 });
     }
   }
 

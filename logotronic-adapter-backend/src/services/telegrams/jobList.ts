@@ -92,12 +92,12 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   }
 
   const expectedTypeId = parseInt(rapidaTypeIds.jobList, 10);
-  if (domain.typeId !== expectedTypeId) {
-    logger.error(
-      `jobList response typeId mismatch. Expected ${expectedTypeId} but got ${domain.typeId}`
-    );
-    return;
-  }
+  // if (domain.typeId !== expectedTypeId) {
+  //   logger.error(
+  //     `jobList response typeId mismatch. Expected ${expectedTypeId} but got ${domain.typeId}`
+  //   );
+  //   return;
+  // }
 
   const jl = domain as any; // has jobs[]
 
