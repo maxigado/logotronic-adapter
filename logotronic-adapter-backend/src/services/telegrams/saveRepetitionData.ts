@@ -43,30 +43,29 @@ export function logotronicRequestBuilder() {
       "LTA-Data.saveRepetitionData.toServer.saveRepetitionData.identifier"
     ) || "";
 
-  // Collect raw data from the buffer tags
-  const rawDataBytes: number[] = [];
+  // Collect raw data from the buffer tags as string characters
+  const rawDataChars: string[] = [];
   let i = 0;
   while (true) {
-    const byteValue = tagStoreInstance.getValueByTagName(
+    const charValue = tagStoreInstance.getValueByTagName(
       `LTA-Data.saveRepetitionData.toServer.saveRepetitionData.rawData.buffer[${i}]`
     );
-    if (byteValue === undefined || byteValue === null) {
+    if (charValue === undefined || charValue === null) {
       break; // Stop when no more buffer tags are found
     }
-    rawDataBytes.push(Number(byteValue));
+    rawDataChars.push(String(charValue));
     i++;
   }
 
-  // Convert the byte array to a Buffer and then to a Base64 string
-  const rawDataBuffer = Buffer.from(rawDataBytes);
-  const base64Data = rawDataBuffer.toString("base64");
+  // Concatenate all string characters
+  const rawDataString = rawDataChars.join("");
 
   // 1. Telegram's XML body
   const serviceXml = `
 <Request typeId="${typeId}">
   <Job orderNo="${orderNo}" prodNo="${prodNo}" jobNo="${jobNo}"/>
   <SaveRepetitionData identifier="${identifier}">
-    ${base64Data}
+    ${rawDataString}
   </SaveRepetitionData>
 </Request>
 `;
