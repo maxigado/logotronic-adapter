@@ -55,19 +55,19 @@ export function logotronicRequestBuilder() {
     }
     const usintValue = Number(byteValue);
     // Convert USINT to Char, use '*' if value is 0
-    const char = usintValue === 0 ? " " : String.fromCharCode(usintValue);
+    const char = String(usintValue);
     rawDataChars.push(char);
     i++;
   }
 
   // Join characters into a string
-  const base64Data = rawDataChars.join("");
+  // const base64Data = rawDataChars.join("");
 
   // 1. Telegram's XML body
   const serviceXml = `
 <Request typeId="${typeId}">
   <Job orderNo="${orderNo}" prodNo="${prodNo}" jobNo="${jobNo}"/>
-  <SaveRepetitionData identifier="${identifier}">${base64Data}</SaveRepetitionData>
+  <SaveRepetitionData identifier="${identifier}">${rawDataChars}</SaveRepetitionData>
 </Request>
 `;
 
