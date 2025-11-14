@@ -64,9 +64,7 @@ export function logotronicRequestBuilder() {
   const serviceXml = `
 <Request typeId="${typeId}">
   <Job orderNo="${orderNo}" prodNo="${prodNo}" jobNo="${jobNo}"/>
-  <SaveRepetitionData identifier="${identifier}">
-    ${rawDataString}
-  </SaveRepetitionData>
+  <SaveRepetitionData identifier="${identifier}">${rawDataString}</SaveRepetitionData>
 </Request>
 `;
 
