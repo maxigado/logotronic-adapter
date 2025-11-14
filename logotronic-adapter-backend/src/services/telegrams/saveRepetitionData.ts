@@ -55,7 +55,7 @@ export function logotronicRequestBuilder() {
     }
     const usintValue = Number(byteValue);
     // Convert USINT to Char, use '*' if value is 0
-    const char = usintValue === 0 ? "*" : String.fromCharCode(usintValue);
+    const char = usintValue === 0 ? " " : String.fromCharCode(usintValue);
     rawDataChars.push(char);
     i++;
   }
