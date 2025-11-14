@@ -43,17 +43,22 @@ export function logotronicRequestBuilder() {
       "LTA-Data.saveRepetitionData.toServer.saveRepetitionData.identifier"
     ) || "";
 
-  // Collect raw data from the buffer tags as string characters
+  // Collect raw data from the buffer tags and convert USINT to characters
   const rawDataChars: string[] = [];
   let i = 0;
-  while (true) {
+  while (i < 2048) {
     const charValue = tagStoreInstance.getValueByTagName(
       `LTA-Data.saveRepetitionData.toServer.saveRepetitionData.rawData.buffer[${i}]`
     );
     if (charValue === undefined || charValue === null) {
       break; // Stop when no more buffer tags are found
     }
-    rawDataChars.push(String(charValue));
+    // Convert USINT (0-255) to character
+    const numValue = Number(charValue);
+    if (numValue === 0) {
+      break; // Stop at null terminator
+    }
+    rawDataChars.push(String.fromCharCode(numValue));
     i++;
   }
 
