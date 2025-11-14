@@ -43,34 +43,29 @@ export function logotronicRequestBuilder() {
       "LTA-Data.saveRepetitionData.toServer.saveRepetitionData.identifier"
     ) || "";
 
-  // Collect raw data from the buffer tags as USINT values and convert to characters
-  const rawDataChars: string[] = [];
+  // Collect raw data from the buffer tags
+  const rawDataBytes: number[] = [];
   let i = 0;
   while (true) {
-    const charValue = tagStoreInstance.getValueByTagName(
+    const byteValue = tagStoreInstance.getValueByTagName(
       `LTA-Data.saveRepetitionData.toServer.saveRepetitionData.rawData.buffer[${i}]`
     );
-    if (charValue === undefined || charValue === null) {
+    if (byteValue === undefined || byteValue === null) {
       break; // Stop when no more buffer tags are found
     }
-    // Convert USINT to character, treat 0 as empty string
-    const usintValue = Number(charValue);
-    if (usintValue === 0) {
-      rawDataChars.push(""); // or use " " for space
-    } else {
-      rawDataChars.push(String.fromCharCode(usintValue));
-    }
+    rawDataBytes.push(Number(byteValue));
     i++;
   }
 
-  // Concatenate all string characters
-  const rawDataString = rawDataChars.join("");
+  // Convert the byte array to a Buffer and then to a Base64 string
+  const rawDataBuffer = Buffer.from(rawDataBytes);
+  const base64Data = rawDataBuffer.toString("base64");
 
   // 1. Telegram's XML body
   const serviceXml = `
 <Request typeId="${typeId}">
   <Job orderNo="${orderNo}" prodNo="${prodNo}" jobNo="${jobNo}"/>
-  <SaveRepetitionData identifier="${identifier}">${rawDataString}</SaveRepetitionData>
+  <SaveRepetitionData identifier="${identifier}">${base64Data}</SaveRepetitionData>
 </Request>
 `;
 
