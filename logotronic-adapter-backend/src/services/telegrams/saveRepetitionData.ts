@@ -44,7 +44,7 @@ export function logotronicRequestBuilder() {
     ) || "";
 
   // Collect raw data from the buffer tags
-  const rawDataBytes: number[] = [];
+  const rawDataChars: string[] = [];
   let i = 0;
   while (true) {
     const byteValue = tagStoreInstance.getValueByTagName(
@@ -53,13 +53,15 @@ export function logotronicRequestBuilder() {
     if (byteValue === undefined || byteValue === null) {
       break; // Stop when no more buffer tags are found
     }
-    rawDataBytes.push(Number(byteValue));
+    const usintValue = Number(byteValue);
+    // Convert USINT to Char, use '*' if value is 0
+    const char = usintValue === 0 ? "*" : String.fromCharCode(usintValue);
+    rawDataChars.push(char);
     i++;
   }
 
-  // Convert the byte array to a Buffer and then to a Base64 string
-  const rawDataBuffer = Buffer.from(rawDataBytes);
-  const base64Data = rawDataBuffer.toString("base64");
+  // Join characters into a string
+  const base64Data = rawDataChars.join("");
 
   // 1. Telegram's XML body
   const serviceXml = `
