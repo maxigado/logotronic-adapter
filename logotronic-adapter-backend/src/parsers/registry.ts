@@ -122,7 +122,7 @@ const registry: Record<number, ParserFn> = {
   10030: parseAssistantTaskQueryResponse,
   10037: parseUserEventsQueryResponse,
   10049: parseReadRepetitionDataResponse,
-  10060: parseJobListResponse,
+  0: parseJobListResponse, // JobList Response typeID comes empty. Validation is skipped.
   10061: parseJobPlanResponse,
   10093: parsePreviewResponse,
   10111: parseMachineShiftsResponse,

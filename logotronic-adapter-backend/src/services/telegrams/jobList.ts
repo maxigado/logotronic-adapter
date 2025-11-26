@@ -90,14 +90,14 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     );
     return;
   }
-
-  const expectedTypeId = parseInt(rapidaTypeIds.jobList, 10);
-  if (domain.typeId !== expectedTypeId) {
-    logger.error(
-      `jobList response typeId mismatch. Expected ${expectedTypeId} but got ${domain.typeId}`
-    );
-    return;
-  }
+  // JobList Response typeID comes empty. Validation is skipped.
+  // const expectedTypeId = parseInt(rapidaTypeIds.jobList, 10);
+  // if (domain.typeId !== expectedTypeId) {
+  //   logger.error(
+  //     `jobList response typeId mismatch. Expected ${expectedTypeId} but got ${domain.typeId}`
+  //   );
+  //   return;
+  // }
 
   const jl = domain as any; // has jobs[]
 
