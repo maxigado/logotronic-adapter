@@ -180,6 +180,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
           : "attribute variant"
       }).`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.readRepetitionData.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.readRepetitionData.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'readRepetitionData' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
   } catch (err) {
     logger.error(
       `Failed to publish readRepetitionData response: ${(err as Error).message}`

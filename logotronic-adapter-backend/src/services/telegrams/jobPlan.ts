@@ -285,6 +285,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
         jp.jobs?.length || 0
       } jobs).`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.jobPlan.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.jobPlan.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'jobPlan' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
   } catch (err) {
     logger.error(
       `Failed to publish jobPlan response: ${(err as Error).message}`

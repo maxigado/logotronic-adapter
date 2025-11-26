@@ -202,6 +202,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
         personnelDomain.people?.length || 0
       } personnel entries).`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.personnel.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.personnel.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'personnel' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
   } catch (err) {
     logger.error(
       `Failed to publish personnel response: ${(err as Error).message}`

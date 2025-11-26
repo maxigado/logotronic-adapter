@@ -143,6 +143,35 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       logger.info(
         `setOrderNote response published to MQTT topic '${topic}' with ${vals.length} values.`
       );
+
+      // Publish done message after 1 second
+      setTimeout(() => {
+        const doneTag = tagStoreInstance.getTagDataByTagName(
+          "LTA-Data.setOrderNote.command.done"
+        );
+
+        if (!doneTag) {
+          logger.error(
+            "Could not find the required tag 'LTA-Data.setOrderNote.command.done' in tagStore. Cannot publish done message."
+          );
+          return;
+        }
+
+        const doneMqttMessage: IPublishMessage = {
+          seq: 1,
+          vals: [
+            {
+              id: doneTag.id,
+              val: true,
+            },
+          ],
+        };
+
+        mqttClientInstance.publish(topic, doneMqttMessage as any);
+        logger.info(
+          `Published 'setOrderNote' completed message to MQTT topic: ${topic}`
+        );
+      }, 1000);
     } else {
       logger.error(
         "MQTT client not connected. Cannot publish setOrderNote response."

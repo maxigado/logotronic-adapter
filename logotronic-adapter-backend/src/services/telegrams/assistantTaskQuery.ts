@@ -164,6 +164,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     logger.info(
       `assistantTaskQuery response published with ${vals.length} values.`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.assistantTaskQuery.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.assistantTaskQuery.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'assistantTaskQuery' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
   } catch (err) {
     logger.error(
       `Failed to publish assistantTaskQuery response: ${(err as Error).message}`

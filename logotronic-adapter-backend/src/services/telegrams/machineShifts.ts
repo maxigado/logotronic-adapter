@@ -172,6 +172,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
         ms.days?.length || 0
       } shiftDay entries).`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.machineShifts.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.machineShifts.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'machineShifts' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
   } catch (err) {
     logger.error(
       `Failed to publish machineShifts response: ${(err as Error).message}`
