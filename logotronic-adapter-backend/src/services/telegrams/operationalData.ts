@@ -120,7 +120,15 @@ export function logotronicRequestBuilder() {
         tagStoreInstance.getValueByTagName(
           `LTA-Data.operationalData.toServer.powerConsumption.powerCounter[${i}].reactivePower`
         ) || "0";
-      powerConsumptionXml += `<PowerCounter id="${id}" name="${name}" realPower="${realPower}" reactivePower="${reactivePower}"/>\n`;
+      const currRealPower =
+        tagStoreInstance.getValueByTagName(
+          `LTA-Data.operationalData.toServer.powerConsumption.powerCounter[${i}].currRealPower`
+        ) || "0";
+      const currReactivePower =
+        tagStoreInstance.getValueByTagName(
+          `LTA-Data.operationalData.toServer.powerConsumption.powerCounter[${i}].currReactivePower`
+        ) || "0";
+      powerConsumptionXml += `<PowerCounter id="${id}" name="${name}" realPower="${realPower}" reactivePower="${reactivePower}" currRealPower="${currRealPower}" currReactivePower="${currReactivePower}"/>\n`;
     }
   }
 
