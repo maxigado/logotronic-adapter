@@ -58,7 +58,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   }
 
   const xmlResponse = responseBody.toString("utf8").trim();
-  logger.info(
+  logger.debug(
     `Logotronic Response Handler is called for preview service with response: ${xmlResponse}`
   );
 

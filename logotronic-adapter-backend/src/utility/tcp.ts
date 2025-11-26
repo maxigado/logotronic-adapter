@@ -32,7 +32,7 @@ class TCPClient {
   }
 
   public onData(data: Buffer) {
-    logger.info(
+    logger.debug(
       `Received message from ${this.clientId}: ${data.toString("hex")}`
     ); // Hex formatında logla
     // Yanıt işleme mantığı burada olacaktır (LogotronicResponseHandler'a yönlendirme)

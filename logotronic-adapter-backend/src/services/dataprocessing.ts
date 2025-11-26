@@ -10,6 +10,7 @@ import { IPublishMessage } from "../dataset/common";
 import { IStatusMessage } from "../dataset/status";
 import { statusStoreInstance } from "../store/statusstore";
 import { rapidaTypeIds } from "../dataset/typeid";
+import { TCPFrameBuffer } from "../utility/tcpFrameBuffer";
 
 // --- Tip Tanımları ---
 type LogotronicRequestBuilder = (message: any) => void;
@@ -143,6 +144,7 @@ import {
 
 let isMQTTListenerReady: boolean = false;
 let isMetaDataInitialized: boolean = false;
+let tcpFrameBuffer: TCPFrameBuffer;
 // --- Servis Eşleştirmeleri ---
 
 // Aşama 1: MQTT Tetikleyici Tag - Request Builder Eşleştirmesi
@@ -293,11 +295,33 @@ function MQTTLister() {
 }
 
 function TCPListener() {
+  // Initialize the frame buffer for this connection
+  tcpFrameBuffer = new TCPFrameBuffer();
+
   tcpClientInstance.client.on("data", (data: Buffer) => {
     logger.info(
       `Received raw TCP data from Logotronic Server. Length: ${data.length}`
     );
-    processLogotricResponse(data);
+
+    // Add chunk to buffer
+    tcpFrameBuffer.addChunk(data);
+
+    // Extract and process all complete frames
+    const completeFrames = tcpFrameBuffer.extractCompleteFrames();
+
+    if (completeFrames.length > 0) {
+      logger.info(
+        `Processing ${completeFrames.length} complete frame(s) from buffer.`
+      );
+
+      for (const frame of completeFrames) {
+        processLogotricResponse(frame);
+      }
+    } else {
+      logger.debug(
+        `No complete frames yet. Buffer size: ${tcpFrameBuffer.getBufferSize()} bytes`
+      );
+    }
   });
 }
 

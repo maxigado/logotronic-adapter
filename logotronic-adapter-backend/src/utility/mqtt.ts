@@ -138,7 +138,7 @@ class MQTTClient {
       if (error) {
         logger.error("Error publishing message:", error);
       } else {
-        logger.info(
+        logger.debug(
           `Published to topic: ${topic} with data: ${JSON.stringify(
             processedMessage
           )}`
