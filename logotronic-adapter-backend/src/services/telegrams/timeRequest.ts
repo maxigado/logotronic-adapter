@@ -20,9 +20,7 @@ export function logotronicRequestBuilder() {
   });
 
   if (tcpClientInstance && tcpClientInstance.isConnected) {
-    // Per user instruction, sending only the first 24 bytes, deviating from the protocol.
-    const slicedBuffer = requestBuffer.slice(0, 24);
-    tcpClientInstance.send(slicedBuffer);
+    tcpClientInstance.send(requestBuffer);
     logger.info(`timeRequest request (TypeID: ${typeId}) sent successfully.`);
   } else {
     logger.error(
