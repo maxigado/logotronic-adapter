@@ -78,6 +78,10 @@ import {
   logotronicResponseHandler as activeAssistantTasksHandler,
 } from "./telegrams/activeAssistantTasks";
 import {
+  logotronicRequestBuilder as machineErrorTextsBuilder,
+  logotronicResponseHandler as machineErrorTextsHandler,
+} from "./telegrams/machineErrorTexts";
+import {
   logotronicRequestBuilder as jobListBuilder,
   logotronicResponseHandler as jobListHandler,
 } from "./telegrams/jobList";
@@ -195,6 +199,7 @@ const serviceRequestTriggers: { [tagName: string]: LogotronicRequestBuilder } =
     "LTA-Data.jobInfo.command.execute": jobInfoBuilder,
     "LTA-Data.activeAssistantTasks.command.execute":
       activeAssistantTasksBuilder,
+    "LTA-Data.machineErrorTexts.command.execute": machineErrorTextsBuilder,
   };
 
 // Aşama 2: Logotronic Response TypeID - Response Handler Eşleştirmesi
@@ -225,6 +230,7 @@ const serviceResponseHandlers: { [typeId: string]: LogotronicResponseHandler } =
     [rapidaTypeIds.jobHeadDataExchange]: jobHeadDataExchangeHandler,
     [rapidaTypeIds.jobInfo]: jobInfoHandler,
     [rapidaTypeIds.activeAssistantTasks]: activeAssistantTasksHandler,
+    [rapidaTypeIds.machineErrorTexts]: machineErrorTextsHandler,
     [rapidaTypeIds.accept]: acceptHandler,
     [rapidaTypeIds.workplaceSetup]: workplaceSetupHandler,
     [rapidaTypeIds.workplaceInfo]: workplaceInfoHandler,
