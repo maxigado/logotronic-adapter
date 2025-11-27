@@ -20,6 +20,7 @@ export const rapidaTypeIds = {
   jobList: "10060",
   jobPlan: "10061",
   createJob: "10063",
+  jobInfo: "10075",
   getOrderNote: "10006",
   setOrderNote: "10007",
   preview: "10093",

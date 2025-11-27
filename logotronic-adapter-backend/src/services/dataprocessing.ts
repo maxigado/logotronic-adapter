@@ -70,6 +70,10 @@ import {
   logotronicResponseHandler as jobHeadDataExchangeHandler,
 } from "./telegrams/jobHeadDataExchange";
 import {
+  logotronicRequestBuilder as jobInfoBuilder,
+  logotronicResponseHandler as jobInfoHandler,
+} from "./telegrams/jobInfo";
+import {
   logotronicRequestBuilder as jobListBuilder,
   logotronicResponseHandler as jobListHandler,
 } from "./telegrams/jobList";
@@ -184,6 +188,7 @@ const serviceRequestTriggers: { [tagName: string]: LogotronicRequestBuilder } =
     "LTA-Data.prodHeadDataExchange.command.execute":
       prodHeadDataExchangeBuilder,
     "LTA-Data.jobHeadDataExchange.command.execute": jobHeadDataExchangeBuilder,
+    "LTA-Data.jobInfo.command.execute": jobInfoBuilder,
   };
 
 // Aşama 2: Logotronic Response TypeID - Response Handler Eşleştirmesi
@@ -212,6 +217,7 @@ const serviceResponseHandlers: { [typeId: string]: LogotronicResponseHandler } =
     [rapidaTypeIds.orderHeadDataExchange]: orderHeadDataExchangeHandler,
     [rapidaTypeIds.prodHeadDataExchange]: prodHeadDataExchangeHandler,
     [rapidaTypeIds.jobHeadDataExchange]: jobHeadDataExchangeHandler,
+    [rapidaTypeIds.jobInfo]: jobInfoHandler,
     [rapidaTypeIds.accept]: acceptHandler,
     [rapidaTypeIds.workplaceSetup]: workplaceSetupHandler,
     [rapidaTypeIds.workplaceInfo]: workplaceInfoHandler,
