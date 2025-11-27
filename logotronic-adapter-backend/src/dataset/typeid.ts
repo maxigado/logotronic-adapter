@@ -21,6 +21,7 @@ export const rapidaTypeIds = {
   jobPlan: "10061",
   createJob: "10063",
   jobInfo: "10075",
+  activeAssistantTasks: "10404",
   getOrderNote: "10006",
   setOrderNote: "10007",
   preview: "10093",

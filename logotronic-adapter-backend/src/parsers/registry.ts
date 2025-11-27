@@ -72,6 +72,10 @@ import {
   GetOrderNoteResponse,
 } from "./getOrderNote";
 import { parseJobInfoResponse, JobInfoResponse } from "./jobInfo";
+import {
+  parseActiveAssistantTasksResponse,
+  ActiveAssistantTasksResponse,
+} from "./activeAssistantTasks";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -98,6 +102,7 @@ export type DomainResponse =
   | MachineShiftsResponse
   | GetOrderNoteResponse
   | JobInfoResponse
+  | ActiveAssistantTasksResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -130,6 +135,7 @@ const registry: Record<number, ParserFn> = {
   10111: parseMachineShiftsResponse,
   10006: parseGetOrderNoteResponse,
   10075: parseJobInfoResponse,
+  10404: parseActiveAssistantTasksResponse,
 };
 
 export function parseDomainResponse(
