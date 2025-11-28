@@ -8,6 +8,81 @@ import { safeParseXml } from "../../utility/xml";
 import { parseDomainResponse } from "../../parsers/registry";
 import { IPublishMessage } from "../../dataset/common";
 import { config } from "../../config/config";
+import * as fs from "fs";
+import * as path from "path";
+
+/**
+ * Language ID to XML file mapping.
+ * Maps language IDs to their corresponding error text XML files.
+ * Available files: de (0), en_gb (1), en_us (8), tr (17)
+ */
+const LANGUAGE_ID_TO_FILE_MAP: { [key: number]: string } = {
+  0: "MessagesAndLocations_de.xml", // German
+  1: "MessagesAndLocations_en_gb.xml", // English (GB) - Default
+  8: "MessagesAndLocations_en_us.xml", // English (US)
+  17: "MessagesAndLocations_tr.xml", // Turkish
+};
+
+const DEFAULT_LANGUAGE_ID = 1; // English (GB)
+const DEFAULT_XML_FILE = "MessagesAndLocations_en_gb.xml";
+
+/**
+ * Reads the error text XML file for the given language ID.
+ * Strips the XML declaration line and returns the content.
+ * Falls back to English (GB) if the file doesn't exist.
+ */
+function getErrorTextXmlContent(languageId: number): string {
+  const fileName = LANGUAGE_ID_TO_FILE_MAP[languageId] || DEFAULT_XML_FILE;
+  const filePath = path.join(__dirname, "../../errortexts", fileName);
+
+  try {
+    // Check if the file exists
+    if (!fs.existsSync(filePath)) {
+      logger.warn(
+        `Error text XML file not found for languageId ${languageId}: ${fileName}. Using default: ${DEFAULT_XML_FILE}`
+      );
+      const defaultPath = path.join(
+        __dirname,
+        "../../errortexts",
+        DEFAULT_XML_FILE
+      );
+      const content = fs.readFileSync(defaultPath, "utf8");
+      return stripXmlDeclaration(content);
+    }
+
+    const content = fs.readFileSync(filePath, "utf8");
+    logger.info(
+      `Loaded error text XML for languageId ${languageId}: ${fileName}`
+    );
+    return stripXmlDeclaration(content);
+  } catch (error) {
+    logger.error(
+      `Error reading error text XML file ${fileName}: ${error}. Using default: ${DEFAULT_XML_FILE}`
+    );
+    try {
+      const defaultPath = path.join(
+        __dirname,
+        "../../errortexts",
+        DEFAULT_XML_FILE
+      );
+      const content = fs.readFileSync(defaultPath, "utf8");
+      return stripXmlDeclaration(content);
+    } catch (fallbackError) {
+      logger.error(
+        `Critical: Could not read default error text XML file: ${fallbackError}`
+      );
+      return '<MessagesAndLocations languageId="1"><Locations></Locations><Messages></Messages></MessagesAndLocations>';
+    }
+  }
+}
+
+/**
+ * Strips the XML declaration line from the XML content.
+ * Removes "<?xml version='1.0' encoding='UTF-8'?>" and any surrounding whitespace.
+ */
+function stripXmlDeclaration(xmlContent: string): string {
+  return xmlContent.replace(/<\?xml[^?]*\?>\s*/i, "").trim();
+}
 
 /**
  * Logotronic Request Builder for machineErrorTexts service.
@@ -24,65 +99,32 @@ export function logotronicRequestBuilder() {
       "LTA-Data.machineErrorTexts.toServer.typeId"
     ) || rapidaTypeIds.machineErrorTexts;
 
-  const languageId =
-    tagStoreInstance.getValueByTagName(
-      "LTA-Data.machineErrorTexts.toServer.languageId"
-    ) || "";
+  const languageIdValue = tagStoreInstance.getValueByTagName(
+    "LTA-Data.machineErrorTexts.toServer.languageId"
+  );
 
-  // Build Locations array (up to 2 items)
-  let locationsXml = "";
-  for (let i = 0; i < 2; i++) {
-    const no = tagStoreInstance.getValueByTagName(
-      `LTA-Data.machineErrorTexts.toServer.locations.loc[${i}].no`
-    );
-
-    // Only include location if 'no' exists
-    if (no) {
-      const text =
-        tagStoreInstance.getValueByTagName(
-          `LTA-Data.machineErrorTexts.toServer.locations.loc[${i}].text`
-        ) || "";
-
-      locationsXml += `<Loc no="${no}" text="${text}"/>\n`;
+  // Parse languageId, default to 1 (English GB) if not provided or invalid
+  let languageId = DEFAULT_LANGUAGE_ID;
+  if (
+    languageIdValue !== undefined &&
+    languageIdValue !== null &&
+    languageIdValue !== ""
+  ) {
+    const parsedId = parseInt(languageIdValue.toString(), 10);
+    if (!isNaN(parsedId)) {
+      languageId = parsedId;
     }
   }
 
-  // Build Messages array (up to 2 items)
-  let messagesXml = "";
-  for (let i = 0; i < 2; i++) {
-    const no = tagStoreInstance.getValueByTagName(
-      `LTA-Data.machineErrorTexts.toServer.messages.msg[${i}].no`
-    );
+  logger.info(`machineErrorTexts using languageId: ${languageId}`);
 
-    // Only include message if 'no' exists
-    if (no) {
-      const prio =
-        tagStoreInstance.getValueByTagName(
-          `LTA-Data.machineErrorTexts.toServer.messages.msg[${i}].prio`
-        ) || "";
-      const grpNo =
-        tagStoreInstance.getValueByTagName(
-          `LTA-Data.machineErrorTexts.toServer.messages.msg[${i}].grpNo`
-        ) || "";
-      const text =
-        tagStoreInstance.getValueByTagName(
-          `LTA-Data.machineErrorTexts.toServer.messages.msg[${i}].text`
-        ) || "";
+  // Get the error text XML content based on languageId
+  const errorTextXml = getErrorTextXmlContent(languageId);
 
-      messagesXml += `<Msg no="${no}" prio="${prio}" grpNo="${grpNo}" text="${text}"/>\n`;
-    }
-  }
-
-  // Construct the full XML request
+  // Construct the full XML request with embedded error text XML
   const serviceXml = `
 <Request typeId="${typeId}">
-  <MessagesAndLocations languageId="${languageId}"/>
-  <Locations>
-    ${locationsXml.trim()}
-  </Locations>
-  <Messages>
-    ${messagesXml.trim()}
-  </Messages>
+${errorTextXml}
 </Request>
 `;
 
@@ -95,7 +137,7 @@ export function logotronicRequestBuilder() {
   if (tcpClientInstance && tcpClientInstance.isConnected) {
     tcpClientInstance.send(requestBuffer);
     logger.info(
-      `machineErrorTexts request (TypeID: ${typeId}) sent successfully.`
+      `machineErrorTexts request (TypeID: ${typeId}, LanguageID: ${languageId}) sent successfully.`
     );
   } else {
     logger.error(
