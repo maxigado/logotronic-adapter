@@ -154,10 +154,31 @@ function checkAndUpdateCode() {
 
   // Rebuild the application
   log("Building application...");
-  const buildResult = execCommand("npm run build");
-  if (!buildResult.success) {
-    log(`Failed to build application: ${buildResult.error}`, "ERROR");
-    return { updated: false, reason: "build-failed", error: buildResult.error };
+
+  // Run TypeScript compilation
+  const tscResult = execCommand("npx tsc");
+  if (!tscResult.success) {
+    log(`Failed to compile TypeScript: ${tscResult.error}`, "ERROR");
+    return { updated: false, reason: "build-failed", error: tscResult.error };
+  }
+  log("TypeScript compilation completed.");
+
+  // Copy views folder manually
+  log("Copying views folder...");
+  const viewsCopyResult = execCommand("cp -R src/views dist/");
+  if (!viewsCopyResult.success) {
+    log(`Failed to copy views folder: ${viewsCopyResult.error}`, "WARN");
+    // Try alternative method
+    const altCopyResult = execCommand(
+      "mkdir -p dist/views && cp -R src/views/. dist/views/"
+    );
+    if (!altCopyResult.success) {
+      log(`Alternative copy also failed: ${altCopyResult.error}`, "ERROR");
+    } else {
+      log("Views folder copied successfully (alternative method).");
+    }
+  } else {
+    log("Views folder copied successfully.");
   }
 
   log("Application built successfully.");
