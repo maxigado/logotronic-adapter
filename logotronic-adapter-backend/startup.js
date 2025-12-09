@@ -213,17 +213,21 @@ async function startup() {
     saveUpdateInfo(updateResult);
 
     if (updateResult.updated) {
-      log("Application updated successfully. Starting with new code...");
+      log(
+        "Application updated successfully. Restarting container to load new code..."
+      );
+      log("========================================");
+      // Exit to trigger container restart with new code
+      process.exit(0);
     } else {
       log(
         `Starting application with existing code (${updateResult.reason})...`
       );
+      log("========================================");
+
+      // Start the application
+      require("./index.js");
     }
-
-    log("========================================");
-
-    // Start the application
-    require("./index.js");
   } catch (error) {
     log(`Startup error: ${error.message}`, "ERROR");
     log(error.stack, "ERROR");
