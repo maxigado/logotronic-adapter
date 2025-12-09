@@ -39,3 +39,53 @@ setTimeout(() => {
   dataprocessing.initdataprocessing();
   statusStoreInstance.initializeWebSocketListeners();
 }, 2000);
+
+// Graceful shutdown handler
+function gracefulShutdown(signal: string) {
+  logger.info(`${signal} received. Starting graceful shutdown...`);
+
+  // Close server to stop accepting new connections
+  server.close(() => {
+    logger.info("HTTP server closed");
+  });
+
+  // Close WebSocket connections
+  webSocketManager.getIo().close(() => {
+    logger.info("WebSocket server closed");
+  });
+
+  // Close MQTT and TCP connections if they exist
+  try {
+    const dataprocessing = require("./services/dataprocessing");
+
+    if (
+      dataprocessing.mqttClientInstance &&
+      dataprocessing.mqttClientInstance.client
+    ) {
+      dataprocessing.mqttClientInstance.client.end(false, {}, () => {
+        logger.info("MQTT connection closed");
+      });
+    }
+
+    if (
+      dataprocessing.tcpClientInstance &&
+      dataprocessing.tcpClientInstance.client
+    ) {
+      dataprocessing.tcpClientInstance.client.end(() => {
+        logger.info("TCP connection closed");
+      });
+    }
+  } catch (error) {
+    logger.error(`Error during connection cleanup: ${error}`);
+  }
+
+  // Give connections time to close gracefully, then exit
+  setTimeout(() => {
+    logger.info("Graceful shutdown complete. Exiting...");
+    process.exit(0);
+  }, 5000);
+}
+
+// Register shutdown handlers
+process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+process.on("SIGINT", () => gracefulShutdown("SIGINT"));

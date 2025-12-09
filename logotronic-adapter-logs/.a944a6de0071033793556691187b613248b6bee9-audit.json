@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 7
+    },
+    "auditLog": "/logotronic-adapter-backend/dist/logs/.a944a6de0071033793556691187b613248b6bee9-audit.json",
+    "files": [
+        {
+            "date": 1765266959865,
+            "name": "/logotronic-adapter-backend/dist/logs/application-2025-12-09.log",
+            "hash": "4ab6f15853af36e27bd8f0d99d8688bf499fec61afd9d10cd8f869f432192727"
+        }
+    ],
+    "hashType": "sha256"
+}

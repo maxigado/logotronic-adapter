@@ -1,5 +1,8 @@
 FROM node:25.2-alpine3.21
 
+# Install git for auto-update functionality
+RUN apk add --no-cache git
+
 WORKDIR /logotronic-adapter-backend
 
 COPY package.json .
@@ -10,4 +13,4 @@ COPY . .
 
 RUN npm run build
 
-CMD ["node", "index.js"]
+CMD ["node", "startup.js"]
