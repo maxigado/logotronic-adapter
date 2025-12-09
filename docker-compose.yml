@@ -10,7 +10,7 @@ services:
       - TZ=Europe/Istanbul
     networks:
       - "proxy-redirect"
-    mem_limit: 2048mb
+    mem_limit: 1024mb
     restart: always
     volumes:
       - "./logotronic-adapter-logs/:/logotronic-adapter-backend/dist/logs"
