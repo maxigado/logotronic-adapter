@@ -68,6 +68,10 @@ function initGitRepo() {
   execCommand('git config user.email "docker@logotronic-adapter"');
   execCommand('git config user.name "Logotronic Adapter Docker"');
 
+  // Configure pull strategy to handle divergent branches
+  // Using rebase to keep history clean and avoid merge commits
+  execCommand("git config pull.rebase true");
+
   return true;
 }
 
@@ -123,11 +127,12 @@ function checkAndUpdateCode() {
     `origin/${GIT_BRANCH}`
   );
 
-  // Pull changes
-  const pullResult = execCommand(`git pull origin ${GIT_BRANCH}`);
-  if (!pullResult.success) {
-    log(`Failed to pull changes: ${pullResult.error}`, "ERROR");
-    return { updated: false, reason: "pull-failed", error: pullResult.error };
+  // Reset local changes to avoid conflicts (force update from remote)
+  log("Resetting local changes to match remote...");
+  const resetResult = execCommand(`git reset --hard origin/${GIT_BRANCH}`);
+  if (!resetResult.success) {
+    log(`Failed to reset to remote: ${resetResult.error}`, "ERROR");
+    return { updated: false, reason: "reset-failed", error: resetResult.error };
   }
 
   log("Successfully pulled latest changes.");
