@@ -5,7 +5,7 @@ services:
     build: ./logotronic-adapter-backend
     container_name: logotronic-adapter-backend
     ports:
-      - 3030:3030
+      - 3000:3000
     environment:
       - TZ=Europe/Istanbul
     networks:
