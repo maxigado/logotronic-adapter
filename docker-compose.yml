@@ -5,7 +5,7 @@ services:
     build: ./logotronic-adapter-backend
     container_name: logotronic-adapter-backend
     ports:
-      - 3000:3000
+      - 3030:3030
     environment:
       - TZ=Europe/Istanbul
     networks:
@@ -17,4 +17,3 @@ services:
 networks:
   proxy-redirect:
     external: true
-    name: proxy-redirect
