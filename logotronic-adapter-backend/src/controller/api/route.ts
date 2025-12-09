@@ -11,7 +11,7 @@ router.get("/", (req: Request, res: Response) => {
   });
 });
 
-router.get("/statusx", getMachineStatus);
+router.get("/statusw", getMachineStatus);
 router.get("/tagstore", getTagStoreByID);
 router.get("/tagstore/:id", getTagDataById);
 router.get("/version", getVersion);
