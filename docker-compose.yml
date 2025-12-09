@@ -8,19 +8,12 @@ services:
       - 3000:3000
     environment:
       - TZ=Europe/Istanbul
-      - GIT_REPO_URL=https://github.com/maxigado/logotronic-adapter.git
-      - GIT_BRANCH=main
-      - AUTO_UPDATE_ENABLED=true
-      - GIT_TOKEN=
     networks:
       - "proxy-redirect"
     mem_limit: 2048mb
     restart: always
     volumes:
       - "./logotronic-adapter-logs/:/logotronic-adapter-backend/dist/logs"
-      - "logotronic-adapter-code:/logotronic-adapter-backend"
-volumes:
-  logotronic-adapter-code:
 networks:
   proxy-redirect:
     external: true

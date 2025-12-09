@@ -16,6 +16,9 @@ pids
 coverage/
 *.lcov
 
+#log files
+logotronic-adapter-logs
+
 # nyc test coverage
 .nyc_output
 
