@@ -129,10 +129,30 @@ function checkAndUpdateCode() {
 
   // Reset local changes to avoid conflicts (force update from remote)
   log("Resetting local changes to match remote...");
+
+  // First, clean any untracked files and directories
+  execCommand("git clean -fd");
+
+  // Reset to remote branch
   const resetResult = execCommand(`git reset --hard origin/${GIT_BRANCH}`);
   if (!resetResult.success) {
     log(`Failed to reset to remote: ${resetResult.error}`, "ERROR");
     return { updated: false, reason: "reset-failed", error: resetResult.error };
+  }
+
+  // Verify the reset worked
+  const verifyCommitResult = execCommand("git rev-parse HEAD");
+  const newLocalCommit = verifyCommitResult.success
+    ? verifyCommitResult.output.trim()
+    : "";
+
+  log(`Reset complete. Current commit: ${newLocalCommit}`);
+
+  if (newLocalCommit !== remoteCommit) {
+    log(
+      `Warning: Local commit (${newLocalCommit}) doesn't match remote (${remoteCommit})`,
+      "WARN"
+    );
   }
 
   log("Successfully pulled latest changes.");
