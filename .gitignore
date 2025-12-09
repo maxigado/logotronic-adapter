@@ -17,7 +17,7 @@ coverage/
 *.lcov
 
 #log files
-logotronic-adapter-logs
+logotronic-adapter-logs/
 
 # nyc test coverage
 .nyc_output
