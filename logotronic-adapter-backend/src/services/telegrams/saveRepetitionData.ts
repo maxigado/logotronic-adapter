@@ -48,7 +48,7 @@ export function logotronicRequestBuilder() {
   let i = 0;
   while (true) {
     const byteValue = tagStoreInstance.getValueByTagName(
-      `LTA-Data.saveRepetitionData.toServer.saveRepetitionData.rawData.buffer[${i}]`
+      `LTA-Data.saveRepetitionData.toServer.saveRepetitionData.rawData.byteArray[${i}]`
     );
     if (byteValue === undefined || byteValue === null) {
       break; // Stop when no more buffer tags are found

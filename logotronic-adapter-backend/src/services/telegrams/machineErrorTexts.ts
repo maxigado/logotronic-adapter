@@ -100,7 +100,7 @@ export function logotronicRequestBuilder() {
     ) || rapidaTypeIds.machineErrorTexts;
 
   const languageIdValue = tagStoreInstance.getValueByTagName(
-    "LTA-Data.machineErrorTexts.toServer.languageId"
+    "LTA-Data.machineErrorText.toServer.languageId"
   );
 
   // Parse languageId, default to 1 (English GB) if not provided or invalid

@@ -199,7 +199,7 @@ const serviceRequestTriggers: { [tagName: string]: LogotronicRequestBuilder } =
     "LTA-Data.jobInfo.command.execute": jobInfoBuilder,
     "LTA-Data.activeAssistantTasks.command.execute":
       activeAssistantTasksBuilder,
-    "LTA-Data.machineErrorTexts.command.execute": machineErrorTextsBuilder,
+    "LTA-Data.machineErrorText.command.execute": machineErrorTextsBuilder,
   };
 
 // Aşama 2: Logotronic Response TypeID - Response Handler Eşleştirmesi
