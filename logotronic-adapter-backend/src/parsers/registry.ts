@@ -71,6 +71,15 @@ import {
   parseGetOrderNoteResponse,
   GetOrderNoteResponse,
 } from "./getOrderNote";
+import { parseJobInfoResponse, JobInfoResponse } from "./jobInfo";
+import {
+  parseActiveAssistantTasksResponse,
+  ActiveAssistantTasksResponse,
+} from "./activeAssistantTasks";
+import {
+  parseMachineErrorTextsResponse,
+  MachineErrorTextsResponse,
+} from "./machineErrorTexts";
 
 export type DomainResponse =
   | AssistantTaskResponse
@@ -96,6 +105,9 @@ export type DomainResponse =
   | PreviewResponse
   | MachineShiftsResponse
   | GetOrderNoteResponse
+  | JobInfoResponse
+  | ActiveAssistantTasksResponse
+  | MachineErrorTextsResponse
   | ResponseMeta;
 
 type ParserFn = (
@@ -122,11 +134,14 @@ const registry: Record<number, ParserFn> = {
   10030: parseAssistantTaskQueryResponse,
   10037: parseUserEventsQueryResponse,
   10049: parseReadRepetitionDataResponse,
-  10060: parseJobListResponse,
+  0: parseJobListResponse, // JobList Response typeID comes empty. Validation is skipped.
   10061: parseJobPlanResponse,
   10093: parsePreviewResponse,
   10111: parseMachineShiftsResponse,
   10006: parseGetOrderNoteResponse,
+  10075: parseJobInfoResponse,
+  10404: parseActiveAssistantTasksResponse,
+  10201: parseMachineErrorTextsResponse,
 };
 
 export function parseDomainResponse(

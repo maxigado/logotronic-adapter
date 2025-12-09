@@ -58,7 +58,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   }
 
   const xmlResponse = responseBody.toString("utf8").trim();
-  logger.info(
+  logger.debug(
     `Logotronic Response Handler is called for preview service with response: ${xmlResponse}`
   );
 
@@ -162,6 +162,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
         previewDomain.jpegData?.length || 0
       } JPEGData entries).`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.preview.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.preview.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'preview' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
     // Broadcast preview images (up to two) over WebSocket to frontend
     if (entries.length) {
       try {

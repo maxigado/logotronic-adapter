@@ -109,6 +109,35 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       const topic = config.databus.topic.write;
       mqttClientInstance.publish(topic, mqttMessage as any);
       logger.info(`Published 'info' response data to MQTT topic: ${topic}`);
+
+      // 5. Publish done message after 1 second
+      setTimeout(() => {
+        const doneTag = tagStoreInstance.getTagDataByTagName(
+          "LTA-Data.info.command.done"
+        );
+
+        if (!doneTag) {
+          logger.error(
+            "Could not find the required tag 'LTA-Data.info.command.done' in tagStore. Cannot publish done message."
+          );
+          return;
+        }
+
+        const doneMqttMessage: IPublishMessage = {
+          seq: 1,
+          vals: [
+            {
+              id: doneTag.id,
+              val: true,
+            },
+          ],
+        };
+
+        mqttClientInstance.publish(topic, doneMqttMessage as any);
+        logger.info(
+          `Published 'info' completed message to MQTT topic: ${topic}`
+        );
+      }, 1000);
     } else {
       logger.error(
         "MQTT client is not connected. Cannot publish 'info' response data."

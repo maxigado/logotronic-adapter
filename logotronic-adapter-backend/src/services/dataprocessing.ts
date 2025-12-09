@@ -10,6 +10,7 @@ import { IPublishMessage } from "../dataset/common";
 import { IStatusMessage } from "../dataset/status";
 import { statusStoreInstance } from "../store/statusstore";
 import { rapidaTypeIds } from "../dataset/typeid";
+import { TCPFrameBuffer } from "../utility/tcpFrameBuffer";
 
 // --- Tip Tanımları ---
 type LogotronicRequestBuilder = (message: any) => void;
@@ -68,6 +69,18 @@ import {
   logotronicRequestBuilder as jobHeadDataExchangeBuilder,
   logotronicResponseHandler as jobHeadDataExchangeHandler,
 } from "./telegrams/jobHeadDataExchange";
+import {
+  logotronicRequestBuilder as jobInfoBuilder,
+  logotronicResponseHandler as jobInfoHandler,
+} from "./telegrams/jobInfo";
+import {
+  logotronicRequestBuilder as activeAssistantTasksBuilder,
+  logotronicResponseHandler as activeAssistantTasksHandler,
+} from "./telegrams/activeAssistantTasks";
+import {
+  logotronicRequestBuilder as machineErrorTextsBuilder,
+  logotronicResponseHandler as machineErrorTextsHandler,
+} from "./telegrams/machineErrorTexts";
 import {
   logotronicRequestBuilder as jobListBuilder,
   logotronicResponseHandler as jobListHandler,
@@ -143,6 +156,7 @@ import {
 
 let isMQTTListenerReady: boolean = false;
 let isMetaDataInitialized: boolean = false;
+let tcpFrameBuffer: TCPFrameBuffer;
 // --- Servis Eşleştirmeleri ---
 
 // Aşama 1: MQTT Tetikleyici Tag - Request Builder Eşleştirmesi
@@ -182,6 +196,10 @@ const serviceRequestTriggers: { [tagName: string]: LogotronicRequestBuilder } =
     "LTA-Data.prodHeadDataExchange.command.execute":
       prodHeadDataExchangeBuilder,
     "LTA-Data.jobHeadDataExchange.command.execute": jobHeadDataExchangeBuilder,
+    "LTA-Data.jobInfo.command.execute": jobInfoBuilder,
+    "LTA-Data.activeAssistantTasks.command.execute":
+      activeAssistantTasksBuilder,
+    "LTA-Data.machineErrorTexts.command.execute": machineErrorTextsBuilder,
   };
 
 // Aşama 2: Logotronic Response TypeID - Response Handler Eşleştirmesi
@@ -210,6 +228,9 @@ const serviceResponseHandlers: { [typeId: string]: LogotronicResponseHandler } =
     [rapidaTypeIds.orderHeadDataExchange]: orderHeadDataExchangeHandler,
     [rapidaTypeIds.prodHeadDataExchange]: prodHeadDataExchangeHandler,
     [rapidaTypeIds.jobHeadDataExchange]: jobHeadDataExchangeHandler,
+    [rapidaTypeIds.jobInfo]: jobInfoHandler,
+    [rapidaTypeIds.activeAssistantTasks]: activeAssistantTasksHandler,
+    [rapidaTypeIds.machineErrorTexts]: machineErrorTextsHandler,
     [rapidaTypeIds.accept]: acceptHandler,
     [rapidaTypeIds.workplaceSetup]: workplaceSetupHandler,
     [rapidaTypeIds.workplaceInfo]: workplaceInfoHandler,
@@ -293,11 +314,33 @@ function MQTTLister() {
 }
 
 function TCPListener() {
+  // Initialize the frame buffer for this connection
+  tcpFrameBuffer = new TCPFrameBuffer();
+
   tcpClientInstance.client.on("data", (data: Buffer) => {
     logger.info(
       `Received raw TCP data from Logotronic Server. Length: ${data.length}`
     );
-    processLogotricResponse(data);
+
+    // Add chunk to buffer
+    tcpFrameBuffer.addChunk(data);
+
+    // Extract and process all complete frames
+    const completeFrames = tcpFrameBuffer.extractCompleteFrames();
+
+    if (completeFrames.length > 0) {
+      logger.info(
+        `Processing ${completeFrames.length} complete frame(s) from buffer.`
+      );
+
+      for (const frame of completeFrames) {
+        processLogotricResponse(frame);
+      }
+    } else {
+      logger.debug(
+        `No complete frames yet. Buffer size: ${tcpFrameBuffer.getBufferSize()} bytes`
+      );
+    }
   });
 }
 

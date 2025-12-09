@@ -20,9 +20,7 @@ export function logotronicRequestBuilder() {
   });
 
   if (tcpClientInstance && tcpClientInstance.isConnected) {
-    // Per user instruction, sending only the first 24 bytes, deviating from the protocol.
-    const slicedBuffer = requestBuffer.slice(0, 24);
-    tcpClientInstance.send(slicedBuffer);
+    tcpClientInstance.send(requestBuffer);
     logger.info(`timeRequest request (TypeID: ${typeId}) sent successfully.`);
   } else {
     logger.error(
@@ -84,6 +82,35 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       logger.info(
         `Published 'timeRequest' response data to MQTT topic: ${topic}`
       );
+
+      // 5. Publish done message after 1 second
+      setTimeout(() => {
+        const doneTag = tagStoreInstance.getTagDataByTagName(
+          "LTA-Data.timeRequest.command.done"
+        );
+
+        if (!doneTag) {
+          logger.error(
+            "Could not find the required tag 'LTA-Data.timeRequest.command.done' in tagStore. Cannot publish done message."
+          );
+          return;
+        }
+
+        const doneMqttMessage: IPublishMessage = {
+          seq: 1,
+          vals: [
+            {
+              id: doneTag.id,
+              val: true,
+            },
+          ],
+        };
+
+        mqttClientInstance.publish(topic, doneMqttMessage as any);
+        logger.info(
+          `Published 'timeRequest' completed message to MQTT topic: ${topic}`
+        );
+      }, 1000);
     } else {
       logger.error(
         "MQTT client is not connected. Cannot publish 'timeRequest' response data."

@@ -155,7 +155,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
 
   // Raw data variant: publish each byte
   if (Array.isArray(rrd.rawDataBytes) && rrd.rawDataBytes.length > 0) {
-    for (let i = 0; i < Math.min(1024, rrd.rawDataBytes.length); i++) {
+    for (let i = 0; i < Math.min(2048, rrd.rawDataBytes.length); i++) {
       const byteTag = tagStoreInstance.getTagDataByTagName(
         `LTA-Data.readRepetitionData.toMachine.readRepetitionData.rawData.buffer[${i}]`
       );
@@ -180,6 +180,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
           : "attribute variant"
       }).`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.readRepetitionData.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.readRepetitionData.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'readRepetitionData' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
   } catch (err) {
     logger.error(
       `Failed to publish readRepetitionData response: ${(err as Error).message}`

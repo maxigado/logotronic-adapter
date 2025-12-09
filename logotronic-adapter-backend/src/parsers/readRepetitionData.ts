@@ -42,10 +42,12 @@ export function parseReadRepetitionDataResponse(
       repro === undefined &&
       workplaceName === undefined
     ) {
-      // Interpret rawText as binary data in its UTF-8 bytes; spec says 'Raw data… (without xml declaration)'
-      // We'll take rawText's bytes directly.
-      const buf = Buffer.from(rawText, "utf8");
-      rawDataBytes = Array.from(buf.slice(0, 1024)); // limit to 1024 bytes
+      // Parse comma-separated numeric values (e.g., "0,22,3,55,6,77,88...")
+      rawDataBytes = rawText
+        .split(",")
+        .map((val) => Number(val.trim()))
+        .filter((num) => !isNaN(num))
+        .slice(0, 2048); // limit to 2048 values
     }
   }
 

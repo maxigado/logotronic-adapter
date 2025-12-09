@@ -1,0 +1,223 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<MessagesAndLocations languageId="1">
+	<Locations>
+		<Loc no="10">Machine
+		</Loc>
+		<Loc no="11">No orgin
+		</Loc>
+		<Loc no="12">Cabinet
+		</Loc>
+		<Loc no="13">Auxiliary
+		</Loc>
+		<Loc no="14">External
+		</Loc>
+		<Loc no="15">QA
+		</Loc>
+		<Loc no="16">Prefeeder
+		</Loc>
+		<Loc no="17">Packer
+		</Loc>
+		<Loc no="21">Main-1
+		</Loc>
+		<Loc no="22">Main-2
+		</Loc>
+		<Loc no="23">Main-3
+		</Loc>
+		<Loc no="24">Main-4
+		</Loc>
+		<Loc no="25">Feeder-1
+		</Loc>
+		<Loc no="26">Feeder-2
+		</Loc>
+		<Loc no="27">Side Register-1
+		</Loc>
+		<Loc no="28">Side Register-2
+		</Loc>
+		<Loc no="29">No orgin
+		</Loc>
+		<Loc no="30">Prefold-1
+		</Loc>
+		<Loc no="31">Prefold-2
+		</Loc>
+		<Loc no="32">Prefold-3
+		</Loc>
+		<Loc no="33">Prefold-4
+		</Loc>
+		<Loc no="34">Final fold
+		</Loc>
+		<Loc no="35">Folder left
+		</Loc>
+		<Loc no="36">Folder right
+		</Loc>
+		<Loc no="37">Gluepot
+		</Loc>
+		<Loc no="38">Ejector
+		</Loc>
+		<Loc no="39">No orgin
+		</Loc>
+		<Loc no="40">Delivery
+		</Loc>
+		<Loc no="41">No orgin
+		</Loc>
+		<Loc no="42">Stacker-1
+		</Loc>
+		<Loc no="43">Stacker-2
+		</Loc>
+		<Loc no="44">Stacker-3
+		</Loc>
+		<Loc no="45">No orgin
+		</Loc>
+		<Loc no="46">Conveyor
+		</Loc>
+		<Loc no="47">No orgin
+		</Loc>
+		<Loc no="48">Breakers
+		</Loc>
+		<Loc no="49">No orgin
+		</Loc>
+        <Loc no="50">Inspection
+		</Loc>
+		<Loc no="61">Backfold unit
+		</Loc>
+		<Loc no="62">Backfold-S unit
+		</Loc>
+		<Loc no="63">Embossing unit
+		</Loc>
+		<Loc no="64">TurnPro unit
+		</Loc>
+		<Loc no="65">Nick breaker unit
+		</Loc>
+		<Loc no="71">Autorun
+		</Loc>
+		<Loc no="72">Digirun
+		</Loc>
+		<Loc no="73">Carriers
+		</Loc>
+		<Loc no="74">Setup tool
+		</Loc>
+	    <Loc no="75">Job definition tool
+		</Loc>
+		<Loc no="76">Logotronic adapter
+		</Loc>
+		<Loc no="77">Job library
+		</Loc>
+		<Loc no="78">Inspection adapter
+		</Loc>
+		<Loc no="79">No orgin
+		</Loc>
+		<Loc no="81">Kicker
+		</Loc>
+		<Loc no="82">Stacker front aligner
+		</Loc>
+		<Loc no="83">Micro flute aligner
+		</Loc>
+		<Loc no="84">Stacker back aligner
+		</Loc>
+	    <Loc no="85">Delivery front aligner
+		</Loc>
+		<Loc no="86">PM
+		</Loc>
+	</Locations>
+	<Messages>
+		<Msg no="141">System message active
+		</Msg>
+		<Msg no="142">Safety message active
+		</Msg>
+		<Msg no="143">Axes message active
+		</Msg>
+		<Msg no="144">Production message active
+		</Msg>
+		<Msg no="145">Internal application message active
+		</Msg>
+		<Msg no="146">Modular unit message active
+		</Msg>
+		<Msg no="147">Job tool message active
+		</Msg>
+		<Msg no="151">Machine begin
+		</Msg>
+		<Msg no="152">Machine end
+		</Msg>
+		<Msg no="153">Cpu battery is critical
+		</Msg>
+		<Msg no="154">Remote battery is low
+		</Msg>
+		<Msg no="155">Remote IO failure
+		</Msg>
+		<Msg no="156">Air pressure error
+		</Msg>
+		<Msg no="201">Emergency stop is active
+		</Msg>
+		<Msg no="202">Light curtain is active
+		</Msg>
+		<Msg no="203">Safety door is active
+		</Msg>
+		<Msg no="204">Safety rope is active
+		</Msg>
+		<Msg no="205">Area scanner is active
+		</Msg>
+		<Msg no="206">Two hand control is active
+		</Msg>
+		<Msg no="207">Safety carpet is active
+		</Msg>
+		<Msg no="211">Safety control function error
+		</Msg>
+		<Msg no="251">Axis fault 
+		</Msg>
+		<Msg no="252">Drive fault
+		</Msg>
+		<Msg no="253">Drive control function error
+		</Msg>
+		<Msg no="254">Drive internal error
+		</Msg>
+		<Msg no="255">Line encoder fault
+		</Msg>
+		<Msg no="256">Measuring input fault
+		</Msg>
+		<Msg no="257">Homing fault
+		</Msg>
+		<Msg no="258">Auxiliary drive fault
+		</Msg>
+		<Msg no="261">Cam error
+		</Msg>
+		<Msg no="262">Cam profile error
+		</Msg>
+		<Msg no="263">Output cam error
+		</Msg>
+		<Msg no="301">Jam switch is active
+		</Msg>
+		<Msg no="305">External main stop [1] is active
+		</Msg>
+		<Msg no="306">External feeder stop [1] is active
+		</Msg>
+		<Msg no="307">External main stop [2] is active
+		</Msg>
+		<Msg no="308">External feeder stop [2] is active
+		</Msg>
+		<Msg no="315">Product level warning 
+		</Msg>
+		<Msg no="316">Gap between products is not in permissible range
+		</Msg>
+		<Msg no="317">Gap control is out of permissible range
+		</Msg>
+		<Msg no="318">Size monitor detected inaccurate product
+		</Msg>
+		<Msg no="320">Glue level warning
+		</Msg>
+		<Msg no="351">Internal error (Internal apps)
+		</Msg>
+		<Msg no="352">User parameter error (Internal apps)
+		</Msg>
+		<Msg no="401">Unit fault is active
+		</Msg>
+		<Msg no="451">Application error
+		</Msg>
+		<Msg no="452">Parameter error
+		</Msg>
+		<Msg no="771" prio="1" grpNo="1">Make coffee
+		</Msg>
+		<Msg no="772" prio="2" grpNo="2">Prepare lunch
+		</Msg>
+		<Msg no="773" prio="3" grpNo="3">Go home!
+		</Msg>
+	</Messages>
+</MessagesAndLocations>

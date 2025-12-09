@@ -44,7 +44,7 @@ export function logotronicRequestBuilder() {
     ) || "";
 
   // Collect raw data from the buffer tags
-  const rawDataBytes: number[] = [];
+  const rawDataChars: string[] = [];
   let i = 0;
   while (true) {
     const byteValue = tagStoreInstance.getValueByTagName(
@@ -53,21 +53,21 @@ export function logotronicRequestBuilder() {
     if (byteValue === undefined || byteValue === null) {
       break; // Stop when no more buffer tags are found
     }
-    rawDataBytes.push(Number(byteValue));
+    const usintValue = Number(byteValue);
+    // Convert USINT to Char, use '*' if value is 0
+    const char = String(usintValue);
+    rawDataChars.push(char);
     i++;
   }
 
-  // Convert the byte array to a Buffer and then to a Base64 string
-  const rawDataBuffer = Buffer.from(rawDataBytes);
-  const base64Data = rawDataBuffer.toString("base64");
+  // Join characters into a string
+  // const base64Data = rawDataChars.join("");
 
   // 1. Telegram's XML body
   const serviceXml = `
 <Request typeId="${typeId}">
   <Job orderNo="${orderNo}" prodNo="${prodNo}" jobNo="${jobNo}"/>
-  <SaveRepetitionData identifier="${identifier}">
-    ${base64Data}
-  </SaveRepetitionData>
+  <SaveRepetitionData identifier="${identifier}">${rawDataChars}</SaveRepetitionData>
 </Request>
 `;
 
@@ -165,6 +165,35 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       logger.info(
         `saveRepetitionData response published to MQTT topic '${topic}' with ${vals.length} values.`
       );
+
+      // Publish done message after 1 second
+      setTimeout(() => {
+        const doneTag = tagStoreInstance.getTagDataByTagName(
+          "LTA-Data.saveRepetitionData.command.done"
+        );
+
+        if (!doneTag) {
+          logger.error(
+            "Could not find the required tag 'LTA-Data.saveRepetitionData.command.done' in tagStore. Cannot publish done message."
+          );
+          return;
+        }
+
+        const doneMqttMessage: IPublishMessage = {
+          seq: 1,
+          vals: [
+            {
+              id: doneTag.id,
+              val: true,
+            },
+          ],
+        };
+
+        mqttClientInstance.publish(topic, doneMqttMessage as any);
+        logger.info(
+          `Published 'saveRepetitionData' completed message to MQTT topic: ${topic}`
+        );
+      }, 1000);
     } else {
       logger.error(
         "MQTT client not connected. Cannot publish saveRepetitionData response."

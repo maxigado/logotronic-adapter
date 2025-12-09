@@ -90,14 +90,14 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     );
     return;
   }
-
-  const expectedTypeId = parseInt(rapidaTypeIds.jobList, 10);
-  if (domain.typeId !== expectedTypeId) {
-    logger.error(
-      `jobList response typeId mismatch. Expected ${expectedTypeId} but got ${domain.typeId}`
-    );
-    return;
-  }
+  // JobList Response typeID comes empty. Validation is skipped.
+  // const expectedTypeId = parseInt(rapidaTypeIds.jobList, 10);
+  // if (domain.typeId !== expectedTypeId) {
+  //   logger.error(
+  //     `jobList response typeId mismatch. Expected ${expectedTypeId} but got ${domain.typeId}`
+  //   );
+  //   return;
+  // }
 
   const jl = domain as any; // has jobs[]
 
@@ -308,6 +308,38 @@ export function logotronicResponseHandler(responseBody: Buffer) {
         jl.jobs?.length || 0
       } jobs).`
     );
+
+    // Publish done message after 1 second
+    setTimeout(() => {
+      const doneTag = tagStoreInstance.getTagDataByTagName(
+        "LTA-Data.jobList.command.done"
+      );
+
+      if (!doneTag) {
+        logger.error(
+          "Could not find the required tag 'LTA-Data.jobList.command.done' in tagStore. Cannot publish done message."
+        );
+        return;
+      }
+
+      const doneMqttMessage: IPublishMessage = {
+        seq: 1,
+        vals: [
+          {
+            id: doneTag.id,
+            val: true,
+          },
+        ],
+      };
+
+      mqttClientInstance.publish(
+        config.databus.topic.write,
+        doneMqttMessage as any
+      );
+      logger.info(
+        `Published 'jobList' completed message to MQTT topic: ${config.databus.topic.write}`
+      );
+    }, 1000);
   } catch (err) {
     logger.error(
       `Failed to publish jobList response: ${(err as Error).message}`
