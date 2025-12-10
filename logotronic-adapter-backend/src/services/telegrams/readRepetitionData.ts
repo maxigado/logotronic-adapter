@@ -157,7 +157,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   if (Array.isArray(rrd.rawDataBytes) && rrd.rawDataBytes.length > 0) {
     for (let i = 0; i < Math.min(2048, rrd.rawDataBytes.length); i++) {
       const byteTag = tagStoreInstance.getTagDataByTagName(
-        `LTA-Data.readRepetitionData.toMachine.readRepetitionData.rawData.buffer[${i}]`
+        `LTA-Data.readRepetitionData.toMachine.readRepetitionData.rawData.byteArray[${i}]`
       );
       if (byteTag) vals.push({ id: byteTag.id, val: rrd.rawDataBytes[i] });
     }

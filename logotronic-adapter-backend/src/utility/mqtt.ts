@@ -99,9 +99,11 @@ class MQTTClient {
                 if (typeof originalValue === "string") {
                   val.val =
                     originalValue.toLowerCase() === "true" ||
-                    originalValue === "1";
+                    originalValue === "1"
+                      ? 1
+                      : 0;
                 } else {
-                  val.val = Boolean(originalValue);
+                  val.val = Boolean(originalValue) ? 1 : 0;
                 }
                 break;
               default:
