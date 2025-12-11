@@ -3,7 +3,7 @@ export const config = {
     port: 3000,
   },
   databus: {
-    url: "mqtt://ie-databus",
+    url: "mqtt://localhost",
     username: "edge",
     password: "edge",
     client: "LogotronicAdapter",

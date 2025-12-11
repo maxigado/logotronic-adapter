@@ -96,7 +96,7 @@ export function logotronicRequestBuilder() {
 
   const typeId =
     tagStoreInstance.getValueByTagName(
-      "LTA-Data.machineErrorTexts.toServer.typeId"
+      "LTA-Data.machineErrorText.toServer.typeId"
     ) || rapidaTypeIds.machineErrorTexts;
 
   const languageIdValue = tagStoreInstance.getValueByTagName(
@@ -182,13 +182,13 @@ export function logotronicResponseHandler(responseBody: Buffer) {
 
     // Get tag IDs for meta fields
     const typeIdTag = tagStoreInstance.getTagDataByTagName(
-      "LTA-Data.machineErrorTexts.toMachine.typeId"
+      "LTA-Data.machineErrorText.toMachine.typeId"
     );
     const returnCodeTag = tagStoreInstance.getTagDataByTagName(
-      "LTA-Data.machineErrorTexts.toMachine.returnCode"
+      "LTA-Data.machineErrorText.toMachine.returnCode"
     );
     const errorReasonTag = tagStoreInstance.getTagDataByTagName(
-      "LTA-Data.machineErrorTexts.toMachine.errorReason"
+      "LTA-Data.machineErrorText.toMachine.errorReason"
     );
 
     if (!typeIdTag || !returnCodeTag) {
@@ -226,12 +226,12 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       // Publish done message after 1 second
       setTimeout(() => {
         const doneTag = tagStoreInstance.getTagDataByTagName(
-          "LTA-Data.machineErrorTexts.command.done"
+          "LTA-Data.machineErrorText.command.done"
         );
 
         if (!doneTag) {
           logger.error(
-            "Could not find the required tag 'LTA-Data.machineErrorTexts.command.done' in tagStore. Cannot publish done message."
+            "Could not find the required tag 'LTA-Data.machineErrorText.command.done' in tagStore. Cannot publish done message."
           );
           return;
         }
