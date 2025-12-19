@@ -442,12 +442,24 @@ function processLogotricResponse(data: Buffer) {
   const requestType = data.readUInt32BE(16);
   const dataLength = data.readUInt32BE(20);
 
+  // Validate dataLength to prevent processing corrupted frames
+  const MAX_REASONABLE_LENGTH = 200 * 1024 * 1024; // 200MB (for large preview responses)
+  if (
+    dataLength < 0 ||
+    dataLength > MAX_REASONABLE_LENGTH ||
+    isNaN(dataLength)
+  ) {
+    logger.error(
+      `Invalid dataLength in frame header: ${dataLength}. Skipping frame.`
+    );
+    return;
+  }
+
   // Ensure we have the full frame (header + body + footer)
-  if (data.length < HEADER_SIZE + dataLength + FOOTER_SIZE) {
-    logger.warn(
-      `Incomplete frame received. Expected ${
-        HEADER_SIZE + dataLength + FOOTER_SIZE
-      }, got ${data.length}`
+  const expectedFrameSize = HEADER_SIZE + dataLength + FOOTER_SIZE;
+  if (data.length !== expectedFrameSize) {
+    logger.error(
+      `Frame size mismatch. Expected ${expectedFrameSize}, got ${data.length}. Skipping frame.`
     );
     return;
   }
@@ -460,6 +472,26 @@ function processLogotricResponse(data: Buffer) {
     .toString("ascii", footerOffset + 8, footerOffset + 16)
     .replace(/\0/g, "");
   const eTransactionID = data.readUInt32BE(footerOffset + 16);
+
+  // Validate footer matches header
+  if (dataLength !== eDataLength) {
+    logger.error(
+      `Footer validation failed: dataLength mismatch (header: ${dataLength}, footer: ${eDataLength}). Skipping frame.`
+    );
+    return;
+  }
+  if (requestType !== eRequestType) {
+    logger.error(
+      `Footer validation failed: requestType mismatch (header: ${requestType}, footer: ${eRequestType}). Skipping frame.`
+    );
+    return;
+  }
+  if (transactionID !== eTransactionID) {
+    logger.error(
+      `Footer validation failed: transactionID mismatch (header: ${transactionID}, footer: ${eTransactionID}). Skipping frame.`
+    );
+    return;
+  }
 
   // Build mapping of tag names -> extracted values
   const frameValues: { [tag: string]: string | number } = {
@@ -569,6 +601,10 @@ function processLogotricResponse(data: Buffer) {
   // Extract body buffer and forward to handler based on typeId (requestType)
   const typeId = requestType.toString();
   const bodyBuffer = data.slice(HEADER_SIZE, HEADER_SIZE + dataLength);
+
+  logger.debug(
+    `Frame validated. TypeID: ${typeId}, DataLength: ${dataLength}, TxID: ${transactionID}, Version: ${version}`
+  );
 
   // Call existing handler if available
   if (typeId) {

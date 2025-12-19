@@ -49,8 +49,12 @@ export class TCPFrameBuffer {
       );
 
       // Validate dataLength to prevent buffer overflow from corrupted data
-      if (dataLength > 10 * 1024 * 1024) {
-        // 10MB sanity check
+      const MAX_REASONABLE_LENGTH = 200 * 1024 * 1024; // 200MB (for large preview responses)
+      if (
+        dataLength < 0 ||
+        dataLength > MAX_REASONABLE_LENGTH ||
+        isNaN(dataLength)
+      ) {
         logger.error(
           `Invalid dataLength detected: ${dataLength}. Possible corrupted frame. Clearing buffer.`
         );
@@ -62,6 +66,19 @@ export class TCPFrameBuffer {
       if (this.buffer.length >= expectedFrameSize) {
         // Extract the complete frame
         const frame = this.buffer.slice(0, expectedFrameSize);
+
+        // Validate footer before adding to frames
+        const footerOffset = this.HEADER_SIZE + dataLength;
+        const footerDataLength = frame.readUInt32BE(footerOffset);
+
+        if (footerDataLength !== dataLength) {
+          logger.error(
+            `Frame footer validation failed during extraction. Header dataLength: ${dataLength}, Footer dataLength: ${footerDataLength}. Frame appears corrupted. Clearing buffer.`
+          );
+          this.buffer = Buffer.alloc(0);
+          break;
+        }
+
         frames.push(frame);
 
         // Remove the processed frame from buffer

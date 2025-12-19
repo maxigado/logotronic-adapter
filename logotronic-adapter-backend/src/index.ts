@@ -29,8 +29,8 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use("/", router);
 
-server.listen(config.application.port, () => {
-  logger.info(`Server is running on ${config.application.port}`);
+server.listen(config.application.port, "0.0.0.0", () => {
+  logger.info(`Server is running on 0.0.0.0:${config.application.port}`);
 });
 
 webSocketManager.start(server);

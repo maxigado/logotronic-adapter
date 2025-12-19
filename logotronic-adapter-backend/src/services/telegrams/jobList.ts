@@ -73,9 +73,34 @@ export function logotronicResponseHandler(responseBody: Buffer) {
   }
 
   const xmlResponse = responseBody.toString("utf8").trim();
+
+  // Validate XML - check for multiple XML declarations (indicates corrupted/concatenated data)
+  const xmlDeclCount = (xmlResponse.match(/<\?xml\s+version=/g) || []).length;
+  if (xmlDeclCount > 1) {
+    logger.error(
+      `jobList response contains ${xmlDeclCount} XML declarations. Response may be corrupted or concatenated. First 500 chars: ${xmlResponse.substring(
+        0,
+        500
+      )}`
+    );
+    return;
+  }
+
+  // Check for basic XML structure validity
+  if (!xmlResponse.includes("<?xml") && !xmlResponse.startsWith("<Response")) {
+    logger.error(
+      `jobList response does not appear to be valid XML. First 200 chars: ${xmlResponse.substring(
+        0,
+        200
+      )}`
+    );
+    return;
+  }
+
   logger.info(
-    `Logotronic Response Handler is called for jobList service with response: ${xmlResponse}`
+    `Logotronic Response Handler is called for jobList service with response length: ${xmlResponse.length} bytes`
   );
+  logger.debug(`XML Response preview: ${xmlResponse.substring(0, 500)}...`);
 
   const root = safeParseXml(xmlResponse);
   if (!root) {
