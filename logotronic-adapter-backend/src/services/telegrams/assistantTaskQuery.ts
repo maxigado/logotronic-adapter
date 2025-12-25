@@ -117,8 +117,20 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     vals.push({ id: errorReasonTag.id, val: atq.errorReason ?? "" });
   }
 
-  // Up to 8 TaskGroups, each up to 8 AssistantTasks
-  for (let gIdx = 0; gIdx < 8; gIdx++) {
+  // Get max number of task groups from TagStore settings
+  const maxNumberOfUserAssistantTaskGroup =
+    (tagStoreInstance.getValueByTagName(
+      "LTA-Settings.application.limitations.maxNumberOfUserAssistantTaskGroup"
+    ) as number) || 8;
+
+  // Get max number of tasks per group from TagStore settings
+  const maxNumberOfUserAssistantTask =
+    (tagStoreInstance.getValueByTagName(
+      "LTA-Settings.application.limitations.maxNumberOfUserAssistantTask"
+    ) as number) || 8;
+
+  // Up to maxNumberOfUserAssistantTaskGroup TaskGroups, each up to maxNumberOfUserAssistantTask AssistantTasks
+  for (let gIdx = 0; gIdx < maxNumberOfUserAssistantTaskGroup; gIdx++) {
     const group = atq.groups?.[gIdx];
     const groupNoTag = tagStoreInstance.getTagDataByTagName(
       `LTA-Data.assistantTaskQuery.toMachine.taskGroup[${gIdx}].no`
@@ -133,7 +145,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       vals.push({ id: groupNameTag.id, val: group.name });
     }
 
-    for (let tIdx = 0; tIdx < 8; tIdx++) {
+    for (let tIdx = 0; tIdx < maxNumberOfUserAssistantTask; tIdx++) {
       const task = group?.tasks?.[tIdx];
       const noTag = tagStoreInstance.getTagDataByTagName(
         `LTA-Data.assistantTaskQuery.toMachine.taskGroup[${gIdx}].assistantTask[${tIdx}].no`

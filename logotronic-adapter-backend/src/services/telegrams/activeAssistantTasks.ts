@@ -127,8 +127,14 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     vals.push({ id: errorReasonTag.id, val: domain.errorReason ?? "" });
   }
 
-  // Iterate through up to 16 assistant tasks
-  for (let idx = 0; idx < 16; idx++) {
+  // Get max number of active assistant tasks from TagStore settings
+  const maxNumberOfUserActiveAssistantTasks =
+    (tagStoreInstance.getValueByTagName(
+      "LTA-Settings.application.limitations.maxNumberOfUserActiveAssistantTasks"
+    ) as number) || 16;
+
+  // Iterate through up to maxNumberOfUserActiveAssistantTasks assistant tasks
+  for (let idx = 0; idx < maxNumberOfUserActiveAssistantTasks; idx++) {
     const task = activeTasksDomain.tasks?.[idx];
     if (!task) break; // Stop when no more tasks
 

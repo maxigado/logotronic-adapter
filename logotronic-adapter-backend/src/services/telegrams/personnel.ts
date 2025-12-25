@@ -123,8 +123,14 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     vals.push({ id: errorReasonTag.id, val: personnelDomain.errorReason });
   }
 
-  // Up to 16 Personal entries
-  for (let pIdx = 0; pIdx < 16; pIdx++) {
+  // Get max number of personnel from TagStore settings
+  const maxNumberOfPersonnel =
+    (tagStoreInstance.getValueByTagName(
+      "LTA-Settings.application.limitations.maxNumberOfPersonnel"
+    ) as number) || 16;
+
+  // Up to maxNumberOfPersonnel Personal entries
+  for (let pIdx = 0; pIdx < maxNumberOfPersonnel; pIdx++) {
     const person = personnelDomain.people?.[pIdx];
     if (!person) break; // stop when no more entries
 

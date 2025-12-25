@@ -118,8 +118,20 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     vals.push({ id: errorReasonTag.id, val: uq.errorReason ?? "" });
   }
 
-  // Up to 8 EventGroups each up to 8 UserEvents
-  for (let gIdx = 0; gIdx < 8; gIdx++) {
+  // Get max number of event groups from TagStore settings
+  const maxNumberOfUserEventGroup =
+    (tagStoreInstance.getValueByTagName(
+      "LTA-Settings.application.limitations.maxNumberOfUserEventGroup"
+    ) as number) || 10;
+
+  // Get max number of user events per group from TagStore settings
+  const maxNumberOfUserEvent =
+    (tagStoreInstance.getValueByTagName(
+      "LTA-Settings.application.limitations.maxNumberOfUserEvent"
+    ) as number) || 10;
+
+  // Up to maxNumberOfUserEventGroup EventGroups each up to maxNumberOfUserEvent UserEvents
+  for (let gIdx = 0; gIdx < maxNumberOfUserEventGroup; gIdx++) {
     const group = uq.groups?.[gIdx];
     const groupNameTag = tagStoreInstance.getTagDataByTagName(
       `LTA-Data.userEventsQuery.toMachine.eventGroup[${gIdx}].name`
@@ -128,7 +140,7 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       vals.push({ id: groupNameTag.id, val: group.name });
     }
 
-    for (let eIdx = 0; eIdx < 8; eIdx++) {
+    for (let eIdx = 0; eIdx < maxNumberOfUserEvent; eIdx++) {
       const event = group?.userEvents?.[eIdx];
       if (!event) continue;
       const noTag = tagStoreInstance.getTagDataByTagName(

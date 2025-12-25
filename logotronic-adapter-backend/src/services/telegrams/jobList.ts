@@ -152,8 +152,14 @@ export function logotronicResponseHandler(responseBody: Buffer) {
     vals.push({ id: errorReasonTag.id, val: jl.errorReason ?? "" });
   }
 
-  // Publish up to 51 jobs
-  for (let jIdx = 0; jIdx < 51; jIdx++) {
+  // Get max number of jobs from TagStore settings
+  const maxNumberOfJobs =
+    (tagStoreInstance.getValueByTagName(
+      "LTA-Settings.application.limitations.maxNumberOfJob"
+    ) as number) || 100;
+
+  // Publish up to maxNumberOfJobs jobs
+  for (let jIdx = 0; jIdx < maxNumberOfJobs; jIdx++) {
     const job = jl.jobs?.[jIdx];
     if (!job) break;
     // Order fields
