@@ -49,7 +49,7 @@ export class TCPFrameBuffer {
       );
 
       // Validate dataLength to prevent buffer overflow from corrupted data
-      const MAX_REASONABLE_LENGTH = 200 * 1024 * 1024; // 200MB (for large preview responses)
+      const MAX_REASONABLE_LENGTH = 1024 * 1024 * 1024; // 1GB (for large preview responses)
       if (
         dataLength < 0 ||
         dataLength > MAX_REASONABLE_LENGTH ||
