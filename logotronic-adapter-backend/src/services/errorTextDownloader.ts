@@ -1,8 +1,9 @@
 import * as https from "https";
 import * as fs from "fs";
 import * as path from "path";
-import { config } from "../config/config";
 import logger from "../utility/logger";
+import { tagStoreInstance } from "../store/tagstore";
+import { IPublishMessage } from "../dataset/common";
 
 // Language mapping to determine which files to download
 const languageMapping: { [key: string]: number } = {
@@ -85,13 +86,62 @@ const expectedFiles = [
   { name: "MessagesAndLocations_fa.xml", language: "Farsi" },
 ];
 
-const GITHUB_RAW_BASE_URL =
-  "https://raw.githubusercontent.com/maxigado/logotronic-adapter-error-texts/main";
-const GITHUB_API_BASE_URL =
-  "https://api.github.com/repos/maxigado/logotronic-adapter-error-texts/contents";
-
 // Default error text file that should always be preserved
 const DEFAULT_ERROR_TEXT_FILE = "MessagesAndLocations_en_gb.xml";
+
+// Status ID tag name for publishing sync status
+const STATUS_TAG_NAME = "LTA-Settings.application.externalData.statusId";
+
+/**
+ * Publishes error text sync status to MQTT
+ * @param statusValue 1 = successful download, 0 = no changes, -1 = failed
+ * @param mqttClient MQTT client instance (passed as parameter to avoid circular dependency)
+ * @param topic MQTT topic for publishing
+ */
+function publishSyncStatus(
+  statusValue: number,
+  mqttClient?: any,
+  topic?: string
+): void {
+  try {
+    const statusTag = tagStoreInstance.getTagDataByTagName(STATUS_TAG_NAME);
+
+    if (!statusTag) {
+      logger.warn(
+        `Status tag "${STATUS_TAG_NAME}" not found in TagStore. Cannot publish sync status.`
+      );
+      return;
+    }
+
+    const mqttMessage: IPublishMessage = {
+      seq: 1,
+      vals: [
+        {
+          id: statusTag.id,
+          val: statusValue,
+        },
+      ],
+    };
+
+    if (
+      mqttClient &&
+      mqttClient.client &&
+      mqttClient.client.connected &&
+      topic
+    ) {
+      mqttClient.publish(topic, mqttMessage as any);
+      logger.info(
+        `Published error text sync status (${statusValue}) to MQTT topic: ${topic}`
+      );
+    } else {
+      logger.warn(
+        "MQTT client not connected or topic not provided. Cannot publish error text sync status."
+      );
+    }
+  } catch (error) {
+    logger.error(`Failed to publish error text sync status: ${error}`);
+  }
+}
 
 interface GitHubFile {
   name: string;
@@ -105,15 +155,15 @@ interface GitHubFile {
 /**
  * Downloads a file from a URL using HTTPS
  */
-function downloadFile(url: string): Promise<string> {
+function downloadFile(url: string, githubToken: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const headers: { [key: string]: string } = {
       "User-Agent": "logotronic-adapter",
     };
 
     // Add authorization header if token is provided
-    if (config.github && config.github.token) {
-      headers["Authorization"] = `Bearer ${config.github.token}`;
+    if (githubToken) {
+      headers["Authorization"] = `Bearer ${githubToken}`;
     }
 
     https
@@ -121,7 +171,9 @@ function downloadFile(url: string): Promise<string> {
         if (res.statusCode === 302 || res.statusCode === 301) {
           // Follow redirect
           if (res.headers.location) {
-            downloadFile(res.headers.location).then(resolve).catch(reject);
+            downloadFile(res.headers.location, githubToken)
+              .then(resolve)
+              .catch(reject);
           } else {
             reject(new Error("Redirect without location header"));
           }
@@ -148,31 +200,26 @@ function downloadFile(url: string): Promise<string> {
 /**
  * Fetches the list of files from GitHub directory
  */
-function fetchGitHubFileList(machineType: string): Promise<GitHubFile[]> {
+function fetchGitHubFileList(
+  apiUrl: string,
+  githubToken: string
+): Promise<GitHubFile[]> {
   return new Promise((resolve, reject) => {
-    const url = `${GITHUB_API_BASE_URL}/${machineType}`;
-
     const headers: { [key: string]: string } = {
       "User-Agent": "logotronic-adapter",
     };
 
     // Add authorization header if token is provided
-    if (config.github && config.github.token) {
-      headers["Authorization"] = `Bearer ${config.github.token}`;
-      logger.info(
-        `Using GitHub token: ${config.github.token.substring(0, 10)}...`
-      );
+    if (githubToken) {
+      headers["Authorization"] = `Bearer ${githubToken}`;
+      logger.info(`Using GitHub token: ${githubToken.substring(0, 10)}...`);
     }
 
-    logger.info(`GitHub API URL: ${url}`);
-    logger.info(
-      `Using authentication: ${
-        config.github && config.github.token ? "Yes" : "No"
-      }`
-    );
+    logger.info(`GitHub API URL: ${apiUrl}`);
+    logger.info(`Using authentication: ${githubToken ? "Yes" : "No"}`);
 
     https
-      .get(url, { headers }, (res) => {
+      .get(apiUrl, { headers }, (res) => {
         if (res.statusCode !== 200) {
           let errorData = "";
           res.on("data", (chunk) => {
@@ -184,7 +231,7 @@ function fetchGitHubFileList(machineType: string): Promise<GitHubFile[]> {
             );
             reject(
               new Error(
-                `Failed to fetch file list: HTTP ${res.statusCode}. URL: ${url}`
+                `Failed to fetch file list: HTTP ${res.statusCode}. URL: ${apiUrl}`
               )
             );
           });
@@ -234,20 +281,61 @@ function getLocalFiles(dirPath: string): string[] {
 
 /**
  * Downloads and syncs error text files from GitHub
+ * Reads configuration from PLC tags
+ * @param mqttClient MQTT client instance for publishing status updates
+ * @param topic MQTT topic for publishing status
  */
-export async function syncErrorTexts(): Promise<void> {
-  const machineType = config.machinetype;
+export async function syncErrorTexts(
+  mqttClient?: any,
+  topic?: string
+): Promise<void> {
+  // Read configuration from PLC tags
+  const machineType = tagStoreInstance.getValueByTagName(
+    "LTA-Settings.application.externalData.typeNumber"
+  ) as string;
+
+  const githubToken = tagStoreInstance.getValueByTagName(
+    "LTA-Settings.application.externalData.github.token"
+  ) as string;
+
+  const githubOwner = tagStoreInstance.getValueByTagName(
+    "LTA-Settings.application.externalData.github.repo.owner"
+  ) as string;
+
+  const githubRepoName = tagStoreInstance.getValueByTagName(
+    "LTA-Settings.application.externalData.github.repo.name"
+  ) as string;
+
+  // Validate required configuration
+  if (!machineType || !githubToken || !githubOwner || !githubRepoName) {
+    const missingTags = [];
+    if (!machineType) missingTags.push("typeNumber");
+    if (!githubToken) missingTags.push("github.token");
+    if (!githubOwner) missingTags.push("github.repo.owner");
+    if (!githubRepoName) missingTags.push("github.repo.name");
+
+    const errorMsg = `Missing required PLC tags: ${missingTags.join(", ")}`;
+    logger.error(errorMsg);
+    publishSyncStatus(-1, mqttClient, topic);
+    return;
+  }
+
   const errorTextsDir = path.join(__dirname, "../errortexts");
 
   logger.info(`Starting error text sync for machine type: ${machineType}`);
+  logger.info(`GitHub Repository: ${githubOwner}/${githubRepoName}`);
 
   try {
     // Ensure the directory exists
     ensureDirectoryExists(errorTextsDir);
 
+    // Build GitHub URLs dynamically
+    const githubApiUrl = `https://api.github.com/repos/${githubOwner}/${githubRepoName}/contents/${machineType}`;
+    const githubRawBaseUrl = `https://raw.githubusercontent.com/${githubOwner}/${githubRepoName}/main`;
+
     // Fetch the list of available files from GitHub
     logger.info(`Fetching file list from GitHub for ${machineType}...`);
-    const remoteFiles = await fetchGitHubFileList(machineType);
+    const remoteFiles = await fetchGitHubFileList(githubApiUrl, githubToken);
     logger.info(`Found ${remoteFiles.length} files on GitHub`);
 
     // Get local files
@@ -262,7 +350,7 @@ export async function syncErrorTexts(): Promise<void> {
 
     for (const remoteFile of remoteFiles) {
       const localFilePath = path.join(errorTextsDir, remoteFile.name);
-      const fileUrl = `${GITHUB_RAW_BASE_URL}/${machineType}/${remoteFile.name}`;
+      const fileUrl = `${githubRawBaseUrl}/${machineType}/${remoteFile.name}`;
 
       try {
         // Check if file exists locally
@@ -283,7 +371,7 @@ export async function syncErrorTexts(): Promise<void> {
 
         if (shouldDownload) {
           logger.info(`Downloading ${remoteFile.name}...`);
-          const content = await downloadFile(fileUrl);
+          const content = await downloadFile(fileUrl, githubToken);
           fs.writeFileSync(localFilePath, content, "utf8");
           logger.info(`Successfully downloaded ${remoteFile.name}`);
           downloadedCount++;
@@ -322,10 +410,27 @@ export async function syncErrorTexts(): Promise<void> {
     logger.info(
       `Error text sync completed: ${downloadedCount} downloaded, ${skippedCount} unchanged, ${removedCount} removed, ${errorCount} errors`
     );
+
+    // Determine status value based on results
+    // 1 = successful (files were downloaded or removed)
+    // 0 = no changes (all files unchanged)
+    // -1 = failed (handled in catch block)
+    const hasChanges = downloadedCount > 0 || removedCount > 0;
+    const statusValue = hasChanges ? 1 : 0;
+
+    // Publish status to MQTT
+    if (mqttClient) {
+      publishSyncStatus(statusValue, mqttClient, topic);
+    }
   } catch (error) {
     logger.error(`Error text sync failed: ${error}`);
     logger.info(
       `Continuing with existing local files. Default file ${DEFAULT_ERROR_TEXT_FILE} will be used as fallback.`
     );
+
+    // Publish failed status to MQTT
+    if (mqttClient) {
+      publishSyncStatus(-1, mqttClient, topic);
+    }
   }
 }

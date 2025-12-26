@@ -11,6 +11,7 @@ import { IStatusMessage } from "../dataset/status";
 import { statusStoreInstance } from "../store/statusstore";
 import { rapidaTypeIds } from "../dataset/typeid";
 import { TCPFrameBuffer } from "../utility/tcpFrameBuffer";
+import { syncErrorTexts } from "./errorTextDownloader";
 
 // --- Tip Tanımları ---
 type LogotronicRequestBuilder = (message: any) => void;
@@ -403,6 +404,19 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
 
       // Check connection tag value and establish TCP connection if true
       checkAndManageLogotronicConnection();
+
+      // Sync error texts from GitHub after metadata is initialized
+      // This allows us to read configuration from PLC tags
+      // Pass mqttClientInstance to enable status publishing
+      syncErrorTexts(mqttClientInstance, config.databus.topic.write)
+        .then(() => {
+          logger.info("Error text sync from GitHub completed successfully.");
+        })
+        .catch((error) => {
+          logger.error(
+            `Error text sync encountered an issue: ${error}. Continuing with local files.`
+          );
+        });
     }, 2000);
   }
 }
