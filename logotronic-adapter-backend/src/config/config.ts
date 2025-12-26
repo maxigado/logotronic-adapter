@@ -15,11 +15,18 @@ export const config = {
       status: "ie/s/j/simatic/v1/s7c1/status",
     },
   },
-  logotronicserver: {
-    host: "192.168.0.166",
-    port: 64001,
+  // logotronicserver: {
+  //   host: "192.168.0.166",
+  //   port: 64001,
+  // },
+  machinetype: "machine2000",
+  github: {
+    token: "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",
+    repo: {
+      owner: "maxigado",
+      name: "logotronic-adapter-error-texts",
+    },
   },
-  machinetype: "machine2002",
 };
 
 // export const config = {

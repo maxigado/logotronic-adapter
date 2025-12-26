@@ -107,8 +107,17 @@ interface GitHubFile {
  */
 function downloadFile(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    const headers: { [key: string]: string } = {
+      "User-Agent": "logotronic-adapter",
+    };
+
+    // Add authorization header if token is provided
+    if (config.github && config.github.token) {
+      headers["Authorization"] = `Bearer ${config.github.token}`;
+    }
+
     https
-      .get(url, { headers: { "User-Agent": "logotronic-adapter" } }, (res) => {
+      .get(url, { headers }, (res) => {
         if (res.statusCode === 302 || res.statusCode === 301) {
           // Follow redirect
           if (res.headers.location) {
@@ -143,12 +152,42 @@ function fetchGitHubFileList(machineType: string): Promise<GitHubFile[]> {
   return new Promise((resolve, reject) => {
     const url = `${GITHUB_API_BASE_URL}/${machineType}`;
 
+    const headers: { [key: string]: string } = {
+      "User-Agent": "logotronic-adapter",
+    };
+
+    // Add authorization header if token is provided
+    if (config.github && config.github.token) {
+      headers["Authorization"] = `Bearer ${config.github.token}`;
+      logger.info(
+        `Using GitHub token: ${config.github.token.substring(0, 10)}...`
+      );
+    }
+
+    logger.info(`GitHub API URL: ${url}`);
+    logger.info(
+      `Using authentication: ${
+        config.github && config.github.token ? "Yes" : "No"
+      }`
+    );
+
     https
-      .get(url, { headers: { "User-Agent": "logotronic-adapter" } }, (res) => {
+      .get(url, { headers }, (res) => {
         if (res.statusCode !== 200) {
-          reject(
-            new Error(`Failed to fetch file list: HTTP ${res.statusCode}`)
-          );
+          let errorData = "";
+          res.on("data", (chunk) => {
+            errorData += chunk;
+          });
+          res.on("end", () => {
+            logger.error(
+              `GitHub API Response (${res.statusCode}): ${errorData}`
+            );
+            reject(
+              new Error(
+                `Failed to fetch file list: HTTP ${res.statusCode}. URL: ${url}`
+              )
+            );
+          });
           return;
         }
 
