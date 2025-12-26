@@ -178,6 +178,7 @@ import {
 
 let isMQTTListenerReady: boolean = false;
 let isMetaDataInitialized: boolean = false;
+let isInitialValuesLoaded: boolean = false;
 let tcpFrameBuffer: TCPFrameBuffer;
 // --- Servis Eşleştirmeleri ---
 
@@ -405,18 +406,8 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
       // Check connection tag value and establish TCP connection if true
       checkAndManageLogotronicConnection();
 
-      // Sync error texts from GitHub after metadata is initialized
-      // This allows us to read configuration from PLC tags
-      // Pass mqttClientInstance to enable status publishing
-      syncErrorTexts(mqttClientInstance, config.databus.topic.write)
-        .then(() => {
-          logger.info("Error text sync from GitHub completed successfully.");
-        })
-        .catch((error) => {
-          logger.error(
-            `Error text sync encountered an issue: ${error}. Continuing with local files.`
-          );
-        });
+      // Note: Error text sync will be triggered after initial tag values are loaded
+      // See processMachineMessage function
     }, 2000);
   }
 }
@@ -427,6 +418,23 @@ function processMachineMessage(message: any, topic: string) {
     logger.debug(`Processing machine data message from topic ${topic}.`);
     // 1. Gelen değerlerle TagStore'u güncelle
     tagStoreInstance.updateValues(message);
+
+    // Trigger error text sync after initial tag values are loaded (only once)
+    if (!isInitialValuesLoaded) {
+      isInitialValuesLoaded = true;
+      logger.info(
+        "Initial tag values loaded. Triggering error text sync from GitHub..."
+      );
+      syncErrorTexts(mqttClientInstance, config.databus.topic.write)
+        .then(() => {
+          logger.info("Error text sync from GitHub completed successfully.");
+        })
+        .catch((error) => {
+          logger.error(
+            `Error text sync encountered an issue: ${error}. Continuing with local files.`
+          );
+        });
+    }
 
     // Check for application restart trigger
     checkRestartTrigger(message);
