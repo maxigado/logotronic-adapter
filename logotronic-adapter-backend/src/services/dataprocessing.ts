@@ -452,7 +452,9 @@ function processMachineMessage(message: any, topic: string) {
 }
 
 /**
- * Checks if the restart tag is set to true and restarts the application
+ * Checks if the restart tag is set to true and restarts the application.
+ * Only triggers restart when the tag value is true, ignores false values.
+ * Does not read from tagStore - checks the tag name directly from the message.
  */
 function checkRestartTrigger(message: any): void {
   const vals = (message?.vals || message?.records?.[0]?.vals) as any[];
@@ -461,19 +463,20 @@ function checkRestartTrigger(message: any): void {
     return;
   }
 
-  const restartTagData = tagStoreInstance.getTagDataByTagName(RESTART_TAG_NAME);
-  if (!restartTagData) {
-    return;
-  }
-
   for (const val of vals) {
-    if (val.id === restartTagData.id) {
+    // Check if this is the restart tag by name
+    if (val.name === RESTART_TAG_NAME) {
+      // Only trigger restart when value is true, ignore false
       if (val.val === true || val.val === 1 || val.val === "1") {
         logger.info(
-          "Application restart requested via MQTT tag. Initiating restart..."
+          "Application restart requested via MQTT tag. Initiating restart in 2 seconds..."
         );
-        gracefulShutdown();
+        setTimeout(() => {
+          gracefulShutdown();
+        }, 2000);
       }
+      // If false, do nothing - just ignore
+      return;
     }
   }
 }
