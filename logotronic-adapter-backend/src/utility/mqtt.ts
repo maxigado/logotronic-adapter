@@ -93,7 +93,25 @@ class MQTTClient {
                 }
                 break;
               case "String":
-                val.val = String(originalValue);
+                const strValue = String(originalValue);
+                // Count characters outside ISO-8859-1 (Latin-1) range (code points > 255)
+                // Siemens S7 connector uses Latin-1 encoding, so non-Latin-1 chars need padding compensation
+                let nonLatin1Count = 0;
+                for (const char of strValue) {
+                  const codePoint = char.codePointAt(0);
+                  if (codePoint !== undefined && codePoint > 255) {
+                    nonLatin1Count++;
+                  }
+                }
+                // Append space padding equal to the count of non-Latin-1 characters
+                const paddedValue = strValue + " ".repeat(nonLatin1Count);
+                // Truncate to maximum 255 characters
+                val.val = paddedValue.substring(0, 255);
+                if (nonLatin1Count > 0) {
+                  logger.debug(
+                    `String value for ${tagData.name} contains ${nonLatin1Count} non-Latin-1 character(s). Added ${nonLatin1Count} space(s) for padding. Final length: ${val.val.length}`
+                  );
+                }
                 break;
               case "Bool":
                 if (typeof originalValue === "string") {
