@@ -29,8 +29,8 @@ class StatusStore {
   private wsManager: WebSocketManager | null = null;
   private periodicInterval: NodeJS.Timeout | null = null;
   private mqttStatusInterval: NodeJS.Timeout | null = null;
-  private readonly PERIODIC_INTERVAL_MS = 60000;
-  private readonly MQTT_STATUS_INTERVAL_MS = 60000; // 1 minute for MQTT status publishing
+  private readonly PERIODIC_INTERVAL_MS = 10000;
+  private readonly MQTT_STATUS_INTERVAL_MS = 10000; // 10 seconds for MQTT status publishing
   private mqttClient: any = null; // Lazy loaded MQTT client reference
 
   private constructor() {
