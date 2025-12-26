@@ -23,6 +23,15 @@ const RESTART_TAG_NAME = "LTA-Settings.application.restart";
 const CONNECTION_TAG_NAME = "LTA-Settings.connection.connect";
 let isManuallyDisconnected: boolean = false;
 
+// --- TCP Connection Settings Tags ---
+const REMOTE_ADDRESS_TAG_NAMES = [
+  "LTA-Settings.connection.RemoteAddress.ADDR[0]",
+  "LTA-Settings.connection.RemoteAddress.ADDR[1]",
+  "LTA-Settings.connection.RemoteAddress.ADDR[2]",
+  "LTA-Settings.connection.RemoteAddress.ADDR[3]",
+];
+const REMOTE_PORT_TAG_NAME = "LTA-Settings.connection.RemotePort";
+
 // --- Logotronic Servis Importları (Builders - Request) ---
 import {
   logotronicRequestBuilder as acceptBuilder,
@@ -281,12 +290,13 @@ const dataprocessing = {
       });
 
       // TCP connection will be controlled by PLC tag "LTA-Settings.connection.connect"
+      // Host and port will be read from PLC tags when connecting
       logger.info(
-        "Initializing Logotronic Server TCP Client (connection controlled by PLC tag)"
+        "Initializing Logotronic Server TCP Client (connection settings from PLC tags)"
       );
       tcpClientInstance = new TCPClient(
-        config.logotronicserver.host,
-        config.logotronicserver.port,
+        "", // Host will be set from PLC tags before connecting
+        0, // Port will be set from PLC tags before connecting
         "LogotronicServer"
       );
 
@@ -542,6 +552,56 @@ function checkConnectionTagChange(message: any): void {
 }
 
 /**
+ * Reads TCP connection settings (host and port) from PLC tags
+ * @returns Object with host (IP address string) and port number, or null if tags not found
+ */
+function getConnectionSettingsFromPLCTags(): {
+  host: string;
+  port: number;
+} | null {
+  // Read IP address parts from PLC tags
+  const addressParts: number[] = [];
+  for (const tagName of REMOTE_ADDRESS_TAG_NAMES) {
+    const tagData = tagStoreInstance.getTagDataByTagName(tagName);
+    if (!tagData) {
+      logger.error(
+        `Connection settings tag "${tagName}" not found in TagStore.`
+      );
+      return null;
+    }
+    const value = Number(tagData.value);
+    if (isNaN(value) || value < 0 || value > 255) {
+      logger.error(
+        `Invalid IP address byte value for "${tagName}": ${tagData.value}`
+      );
+      return null;
+    }
+    addressParts.push(value);
+  }
+
+  // Read port from PLC tag
+  const portTagData =
+    tagStoreInstance.getTagDataByTagName(REMOTE_PORT_TAG_NAME);
+  if (!portTagData) {
+    logger.error(
+      `Connection settings tag "${REMOTE_PORT_TAG_NAME}" not found in TagStore.`
+    );
+    return null;
+  }
+  const port = Number(portTagData.value);
+  if (isNaN(port) || port < 0 || port > 65535) {
+    logger.error(
+      `Invalid port value for "${REMOTE_PORT_TAG_NAME}": ${portTagData.value}`
+    );
+    return null;
+  }
+
+  // Build IP address string from 4 bytes
+  const host = addressParts.join(".");
+  return { host, port };
+}
+
+/**
  * Establishes TCP connection to Logotronic Server
  */
 function connectToLogotronicServer(): void {
@@ -555,10 +615,23 @@ function connectToLogotronicServer(): void {
     return;
   }
 
+  // Get connection settings from PLC tags
+  const connectionSettings = getConnectionSettingsFromPLCTags();
+  if (!connectionSettings) {
+    logger.error(
+      "Failed to read connection settings from PLC tags. Cannot connect."
+    );
+    return;
+  }
+
+  // Update TCP client with settings from PLC tags
+  tcpClientInstance.host = connectionSettings.host;
+  tcpClientInstance.port = connectionSettings.port;
+
   isManuallyDisconnected = false;
   tcpClientInstance.setAutoReconnect(true); // Enable auto-reconnect when connecting
   logger.info(
-    `Connecting to Logotronic Server at ${config.logotronicserver.host}:${config.logotronicserver.port}...`
+    `Connecting to Logotronic Server at ${connectionSettings.host}:${connectionSettings.port}...`
   );
   tcpClientInstance.connect();
 }
