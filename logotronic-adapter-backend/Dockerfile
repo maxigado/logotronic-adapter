@@ -11,7 +11,10 @@ RUN npm install
 
 COPY . .
 
-RUN npm run build || (tsc && mkdir -p dist/views dist/errortexts && cp -R src/views/. dist/views/ && cp -R src/errortexts/. dist/errortexts/)
+RUN npx tsc && \
+    mkdir -p dist/views dist/errortexts && \
+    cp -R src/views/. dist/views/ && \
+    cp -R src/errortexts/. dist/errortexts/
 
 # Use PM2 runtime for production (auto-restart on exit)
 CMD ["pm2-runtime", "index.js"]
