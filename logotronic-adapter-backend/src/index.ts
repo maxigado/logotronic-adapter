@@ -10,6 +10,7 @@ import logger from "./utility/logger";
 import { config } from "./config/config";
 import dataprocessing from "./services/dataprocessing";
 import { statusStoreInstance } from "./store/statusstore"; // StatusStore eklendi
+import { syncErrorTexts } from "./services/errorTextDownloader";
 
 const app = express();
 const server = http.createServer(app);
@@ -35,10 +36,23 @@ server.listen(config.application.port, "0.0.0.0", () => {
 
 webSocketManager.start(server);
 
-setTimeout(() => {
-  dataprocessing.initdataprocessing();
-  statusStoreInstance.initializeWebSocketListeners();
-}, 2000);
+// Sync error texts from GitHub before starting data processing
+syncErrorTexts()
+  .then(() => {
+    logger.info("Error text sync completed, starting data processing...");
+    setTimeout(() => {
+      dataprocessing.initdataprocessing();
+      statusStoreInstance.initializeWebSocketListeners();
+    }, 2000);
+  })
+  .catch((error) => {
+    logger.error(`Error text sync encountered an issue: ${error}`);
+    logger.info("Starting data processing with existing files...");
+    setTimeout(() => {
+      dataprocessing.initdataprocessing();
+      statusStoreInstance.initializeWebSocketListeners();
+    }, 2000);
+  });
 
 // Graceful shutdown handler
 function gracefulShutdown(signal: string) {

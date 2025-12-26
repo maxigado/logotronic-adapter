@@ -19,6 +19,7 @@ export const config = {
     host: "192.168.0.166",
     port: 64001,
   },
+  machinetype: "machine2002",
 };
 
 // export const config = {

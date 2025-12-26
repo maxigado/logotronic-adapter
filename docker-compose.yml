@@ -14,6 +14,7 @@ services:
     restart: always
     volumes:
       - "./logotronic-adapter-logs/:/logotronic-adapter-backend/dist/logs"
+      - "./logotronic-adapter-errortexts/:/logotronic-adapter-backend/dist/errortexts"
 networks:
   proxy-redirect:
     external: true

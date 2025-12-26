@@ -14,13 +14,46 @@ import * as path from "path";
 /**
  * Language ID to XML file mapping.
  * Maps language IDs to their corresponding error text XML files.
- * Available files: de (0), en_gb (1), en_us (8), tr (17)
+ * If a language file is not found, the default English (GB) file is used.
+ * The default file is always available as it's bundled with the application.
  */
 const LANGUAGE_ID_TO_FILE_MAP: { [key: number]: string } = {
   0: "MessagesAndLocations_de.xml", // German
-  1: "MessagesAndLocations_en_gb.xml", // English (GB) - Default
+  1: "MessagesAndLocations_en_gb.xml", // English (GB) - Default (always available)
+  2: "MessagesAndLocations_fr.xml", // French
+  3: "MessagesAndLocations_it.xml", // Italian
+  4: "MessagesAndLocations_hu.xml", // Hungary
+  5: "MessagesAndLocations_es.xml", // Spain
+  6: "MessagesAndLocations_sv.xml", // Swedish
+  7: "MessagesAndLocations_da.xml", // Danish
   8: "MessagesAndLocations_en_us.xml", // English (US)
+  9: "MessagesAndLocations_nl.xml", // Dutch
+  10: "MessagesAndLocations_pt.xml", // Portuguese
+  11: "MessagesAndLocations_pl.xml", // Polish
+  12: "MessagesAndLocations_ru.xml", // Russian
+  13: "MessagesAndLocations_el.xml", // Greek
+  14: "MessagesAndLocations_zh.xml", // Chinese
+  15: "MessagesAndLocations_cs.xml", // Czech
+  16: "MessagesAndLocations_ko.xml", // Korean
   17: "MessagesAndLocations_tr.xml", // Turkish
+  18: "MessagesAndLocations_hr.xml", // Croatian
+  19: "MessagesAndLocations_fi.xml", // Finnish
+  21: "MessagesAndLocations_ja.xml", // Japanese
+  22: "MessagesAndLocations_sk.xml", // Sloveccia
+  23: "MessagesAndLocations_ro.xml", // Romanian
+  24: "MessagesAndLocations_vi.xml", // Vietnamese
+  25: "MessagesAndLocations_ar.xml", // Arabic
+  26: "MessagesAndLocations_th.xml", // Thai
+  27: "MessagesAndLocations_sl.xml", // Slovenian
+  28: "MessagesAndLocations_zh_tw.xml", // Chinese (Traditional)
+  29: "MessagesAndLocations_he.xml", // Hebrew
+  30: "MessagesAndLocations_lt.xml", // Lithuanian
+  31: "MessagesAndLocations_pt_br.xml", // Portuguese (Brasil)
+  32: "MessagesAndLocations_bg.xml", // Bulgarian
+  33: "MessagesAndLocations_et.xml", // Estonian
+  34: "MessagesAndLocations_lv.xml", // Latvian
+  35: "MessagesAndLocations_no.xml", // Norwegian
+  36: "MessagesAndLocations_fa.xml", // Farsi
 };
 
 const DEFAULT_LANGUAGE_ID = 1; // English (GB)
@@ -29,50 +62,65 @@ const DEFAULT_XML_FILE = "MessagesAndLocations_en_gb.xml";
 /**
  * Reads the error text XML file for the given language ID.
  * Strips the XML declaration line and returns the content.
- * Falls back to English (GB) if the file doesn't exist.
+ * Falls back to English (GB) default file if:
+ * - The language ID is not mapped
+ * - The requested file doesn't exist
+ * - GitHub sync failed and only default file is available
  */
 function getErrorTextXmlContent(languageId: number): string {
-  const fileName = LANGUAGE_ID_TO_FILE_MAP[languageId] || DEFAULT_XML_FILE;
+  // Get the filename for the language, or use default if language ID not mapped
+  const fileName = LANGUAGE_ID_TO_FILE_MAP[languageId];
+  if (!fileName) {
+    logger.warn(
+      `Language ID ${languageId} not found in mapping. Using default: ${DEFAULT_XML_FILE}`
+    );
+    return loadDefaultErrorTextFile();
+  }
+
   const filePath = path.join(__dirname, "../../errortexts", fileName);
 
   try {
-    // Check if the file exists
+    // Check if the requested file exists
     if (!fs.existsSync(filePath)) {
       logger.warn(
         `Error text XML file not found for languageId ${languageId}: ${fileName}. Using default: ${DEFAULT_XML_FILE}`
       );
-      const defaultPath = path.join(
-        __dirname,
-        "../../errortexts",
-        DEFAULT_XML_FILE
-      );
-      const content = fs.readFileSync(defaultPath, "utf8");
-      return stripXmlDeclaration(content);
+      return loadDefaultErrorTextFile();
     }
 
     const content = fs.readFileSync(filePath, "utf8");
     logger.info(
-      `Loaded error text XML for languageId ${languageId}: ${fileName}`
+      `Successfully loaded error text XML for languageId ${languageId}: ${fileName}`
     );
     return stripXmlDeclaration(content);
   } catch (error) {
     logger.error(
       `Error reading error text XML file ${fileName}: ${error}. Using default: ${DEFAULT_XML_FILE}`
     );
-    try {
-      const defaultPath = path.join(
-        __dirname,
-        "../../errortexts",
-        DEFAULT_XML_FILE
-      );
-      const content = fs.readFileSync(defaultPath, "utf8");
-      return stripXmlDeclaration(content);
-    } catch (fallbackError) {
-      logger.error(
-        `Critical: Could not read default error text XML file: ${fallbackError}`
-      );
-      return '<MessagesAndLocations languageId="1"><Locations></Locations><Messages></Messages></MessagesAndLocations>';
-    }
+    return loadDefaultErrorTextFile();
+  }
+}
+
+/**
+ * Loads the default error text XML file.
+ * This file is always bundled with the application and serves as a fallback.
+ */
+function loadDefaultErrorTextFile(): string {
+  try {
+    const defaultPath = path.join(
+      __dirname,
+      "../../errortexts",
+      DEFAULT_XML_FILE
+    );
+    const content = fs.readFileSync(defaultPath, "utf8");
+    logger.info(`Using default error text file: ${DEFAULT_XML_FILE}`);
+    return stripXmlDeclaration(content);
+  } catch (error) {
+    logger.error(
+      `Critical: Could not read default error text XML file: ${error}`
+    );
+    // Return minimal valid XML structure as last resort
+    return '<MessagesAndLocations languageId="1"><Locations></Locations><Messages></Messages></MessagesAndLocations>';
   }
 }
 
