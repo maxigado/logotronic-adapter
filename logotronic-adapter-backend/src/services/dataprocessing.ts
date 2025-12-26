@@ -18,6 +18,7 @@ type LogotronicResponseHandler = (responseBody: Buffer) => void;
 
 // --- Application Restart Tag ---
 const RESTART_TAG_NAME = "LTA-Settings.application.restart";
+let restartTagId: string | null = null; // Cached tag ID for restart trigger
 
 // --- Connection Control Tag ---
 const CONNECTION_TAG_NAME = "LTA-Settings.connection.connect";
@@ -390,6 +391,16 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
         "MQTT Listener is now ready to process machine data messages."
       );
 
+      // Cache the restart tag ID for later use (avoids tagStore lookup during message processing)
+      const restartTagData =
+        tagStoreInstance.getTagDataByTagName(RESTART_TAG_NAME);
+      if (restartTagData) {
+        restartTagId = restartTagData.id;
+        logger.info(`Restart tag ID cached: ${restartTagId}`);
+      } else {
+        logger.warn(`Restart tag "${RESTART_TAG_NAME}" not found in metadata.`);
+      }
+
       // Check connection tag value and establish TCP connection if true
       checkAndManageLogotronicConnection();
     }, 2000);
@@ -452,11 +463,16 @@ function processMachineMessage(message: any, topic: string) {
 }
 
 /**
- * Checks if the restart tag is set to true and restarts the application.
- * Only triggers restart when the tag value is true, ignores false values.
- * Does not read from tagStore - checks the tag name directly from the message.
+ * Checks if the restart tag is set to 1/true and restarts the application.
+ * Only triggers restart when the tag value is 1 or true, ignores 0 or false.
+ * Uses cached tag ID - no tagStore lookup during message processing.
  */
 function checkRestartTrigger(message: any): void {
+  // Skip if restart tag ID was not cached
+  if (!restartTagId) {
+    return;
+  }
+
   const vals = (message?.vals || message?.records?.[0]?.vals) as any[];
 
   if (!vals || !Array.isArray(vals)) {
@@ -464,18 +480,18 @@ function checkRestartTrigger(message: any): void {
   }
 
   for (const val of vals) {
-    // Check if this is the restart tag by name
-    if (val.name === RESTART_TAG_NAME) {
-      // Only trigger restart when value is true, ignore false
+    // Check if this is the restart tag by cached ID
+    if (val.id === restartTagId) {
+      // Only trigger restart when value is 1 or true, ignore 0 or false
       if (val.val === true || val.val === 1 || val.val === "1") {
         logger.info(
-          "Application restart requested via MQTT tag. Initiating restart in 2 seconds..."
+          "Application restart requested via MQTT tag (value=1). Initiating restart in 2 seconds..."
         );
         setTimeout(() => {
           gracefulShutdown();
         }, 2000);
       }
-      // If false, do nothing - just ignore
+      // If 0 or false, do nothing - just ignore
       return;
     }
   }
