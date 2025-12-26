@@ -94,22 +94,32 @@ class MQTTClient {
                 break;
               case "String":
                 const strValue = String(originalValue);
-                // Count characters outside ISO-8859-1 (Latin-1) range (code points > 255)
-                // Siemens S7 connector uses Latin-1 encoding, so non-Latin-1 chars need padding compensation
-                let nonLatin1Count = 0;
+                // Calculate extra bytes needed for UTF-8 vs Latin-1 encoding
+                // Siemens S7 connector uses ISO-8859-1 (Latin-1) which is 1 byte per character
+                // UTF-8 uses variable bytes: 1 byte (0-127), 2 bytes (128-2047), 3 bytes (2048-65535), 4 bytes (65536+)
+                let extraBytes = 0;
                 for (const char of strValue) {
                   const codePoint = char.codePointAt(0);
-                  if (codePoint !== undefined && codePoint > 255) {
-                    nonLatin1Count++;
+                  if (codePoint !== undefined) {
+                    if (codePoint >= 128 && codePoint <= 2047) {
+                      // 2-byte UTF-8 characters (includes ö, ü, ş, ğ, etc.)
+                      extraBytes += 1;
+                    } else if (codePoint >= 2048 && codePoint <= 65535) {
+                      // 3-byte UTF-8 characters
+                      extraBytes += 2;
+                    } else if (codePoint >= 65536) {
+                      // 4-byte UTF-8 characters (emojis, rare symbols)
+                      extraBytes += 3;
+                    }
                   }
                 }
-                // Append space padding equal to the count of non-Latin-1 characters
-                const paddedValue = strValue + " ".repeat(nonLatin1Count);
+                // Append space padding equal to the extra UTF-8 bytes
+                const paddedValue = strValue + " ".repeat(extraBytes);
                 // Truncate to maximum 255 characters
                 val.val = paddedValue.substring(0, 255);
-                if (nonLatin1Count > 0) {
+                if (extraBytes > 0) {
                   logger.debug(
-                    `String value for ${tagData.name} contains ${nonLatin1Count} non-Latin-1 character(s). Added ${nonLatin1Count} space(s) for padding. Final length: ${val.val.length}`
+                    `String value for ${tagData.name} has ${extraBytes} extra UTF-8 byte(s). Added ${extraBytes} space(s) for padding. Final length: ${val.val.length}`
                   );
                 }
                 break;
