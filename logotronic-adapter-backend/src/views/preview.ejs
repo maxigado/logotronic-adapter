@@ -297,6 +297,10 @@
       const ZOOM_STEP = 25;
       let currentImages = [];
 
+      // Pan offset for images (shared for simplicity)
+      let panX = 0;
+      let panY = 0;
+
       // Touch gesture state
       let initialPinchDistance = null;
       let initialZoom = 100;
@@ -305,9 +309,8 @@
       let isDragging = false;
       let dragStartX = 0;
       let dragStartY = 0;
-      let dragScrollLeft = 0;
-      let dragScrollTop = 0;
-      let dragContainer = null;
+      let dragStartPanX = 0;
+      let dragStartPanY = 0;
 
       // Prevent default browser zoom on the entire page
       document.addEventListener("gesturestart", (e) => e.preventDefault());
@@ -357,9 +360,15 @@
 
       function updateZoomLevel() {
         zoomLevelEl.textContent = currentZoom + "%";
+        updateImageTransforms();
+      }
+
+      function updateImageTransforms() {
         const images = document.querySelectorAll(".image-container img");
         images.forEach((img) => {
-          img.style.transform = `scale(${currentZoom / 100})`;
+          img.style.transform = `translate(${panX}px, ${panY}px) scale(${
+            currentZoom / 100
+          })`;
         });
       }
 
@@ -379,6 +388,8 @@
 
       function resetZoom() {
         currentZoom = 100;
+        panX = 0;
+        panY = 0;
         updateZoomLevel();
       }
 
@@ -386,7 +397,7 @@
       zoomOutBtn.addEventListener("click", zoomOut);
       resetZoomBtn.addEventListener("click", resetZoom);
 
-      // Touch event handlers for pinch-to-zoom on images
+      // Touch event handlers for pinch-to-zoom and drag-to-pan on images
       imagesWrapper.addEventListener(
         "touchstart",
         (e) => {
@@ -398,15 +409,12 @@
             initialZoom = currentZoom;
           } else if (e.touches.length === 1 && isOnImageContainer(e.target)) {
             // Single-finger drag/pan
-            const container = e.target.closest(".image-container");
-            if (container) {
-              isDragging = true;
-              dragContainer = container;
-              dragStartX = e.touches[0].clientX;
-              dragStartY = e.touches[0].clientY;
-              dragScrollLeft = container.scrollLeft;
-              dragScrollTop = container.scrollTop;
-            }
+            e.preventDefault();
+            isDragging = true;
+            dragStartX = e.touches[0].clientX;
+            dragStartY = e.touches[0].clientY;
+            dragStartPanX = panX;
+            dragStartPanY = panY;
           }
         },
         { passive: false }
@@ -425,13 +433,14 @@
             const currentDistance = getTouchDistance(e.touches);
             const scale = currentDistance / initialPinchDistance;
             setZoom(initialZoom * scale);
-          } else if (e.touches.length === 1 && isDragging && dragContainer) {
+          } else if (e.touches.length === 1 && isDragging) {
             // Single-finger drag/pan
             e.preventDefault();
             const deltaX = e.touches[0].clientX - dragStartX;
             const deltaY = e.touches[0].clientY - dragStartY;
-            dragContainer.scrollLeft = dragScrollLeft - deltaX;
-            dragContainer.scrollTop = dragScrollTop - deltaY;
+            panX = dragStartPanX + deltaX;
+            panY = dragStartPanY + deltaY;
+            updateImageTransforms();
           }
         },
         { passive: false }
@@ -443,14 +452,12 @@
         }
         if (e.touches.length === 0) {
           isDragging = false;
-          dragContainer = null;
         }
       });
 
       imagesWrapper.addEventListener("touchcancel", () => {
         initialPinchDistance = null;
         isDragging = false;
-        dragContainer = null;
       });
 
       // Keyboard shortcuts for zoom
@@ -504,7 +511,9 @@
             <div class="image-container">
               <img src="${img.dataUrl}" alt="Preview Side ${
             img.side
-          }" draggable="false" style="transform: scale(${currentZoom / 100})" />
+          }" draggable="false" style="transform: translate(${panX}px, ${panY}px) scale(${
+            currentZoom / 100
+          })" />
             </div>
           `;
           imagesWrapper.appendChild(panel);
