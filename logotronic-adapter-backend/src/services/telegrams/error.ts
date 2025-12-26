@@ -42,14 +42,34 @@ export function logotronicResponseHandler(responseBody: Buffer) {
 
   try {
     // 1. Parse the responseBody buffer
-    const serverInfo = responseBody.toString("ascii").replace(/\0/g, "").trim();
+    // First 4 bytes contain the error code (DInt - signed 32-bit integer)
+    const errorCode = responseBody.readInt32LE(0);
+    // Rest of the body is the error message
+    const errorMessage = responseBody
+      .subarray(4)
+      .toString("ascii")
+      .replace(/\0/g, "")
+      .trim();
 
-    logger.debug(`Parsed Error Response: ServerInfo='${serverInfo}'`);
+    logger.debug(
+      `Parsed Error Response: ErrorCode=${errorCode}, ErrorMessage='${errorMessage}'`
+    );
 
-    // 2. Get Tag ID from tagStore
+    // 2. Get Tag IDs from tagStore
+    const codeTag = tagStoreInstance.getTagDataByTagName(
+      "LTA-Data.error.toMachine.code"
+    );
+
     const messageTag = tagStoreInstance.getTagDataByTagName(
       "LTA-Data.error.toMachine.message"
     );
+
+    if (!codeTag) {
+      logger.error(
+        "Could not find the required tag 'LTA-Data.error.toMachine.code' in tagStore. Cannot publish MQTT message."
+      );
+      return;
+    }
 
     if (!messageTag) {
       logger.error(
@@ -58,11 +78,15 @@ export function logotronicResponseHandler(responseBody: Buffer) {
       return;
     }
 
-    // 3. Build the MQTT message payload
+    // 3. Build the MQTT message payload with both error code and message
     const vals = [
       {
+        id: codeTag.id,
+        val: errorCode,
+      },
+      {
         id: messageTag.id,
-        val: serverInfo,
+        val: errorMessage,
       },
     ];
 
