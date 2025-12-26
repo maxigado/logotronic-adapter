@@ -42,8 +42,8 @@ export function logotronicResponseHandler(responseBody: Buffer) {
 
   try {
     // 1. Parse the responseBody buffer
-    // First 4 bytes contain the error code (DInt - signed 32-bit integer)
-    const errorCode = responseBody.readInt32LE(0);
+    // First 4 bytes contain the error code (DInt - signed 32-bit integer, big-endian)
+    const errorCode = responseBody.readInt32BE(0);
     // Rest of the body is the error message
     const errorMessage = responseBody
       .subarray(4)
