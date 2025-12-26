@@ -16,6 +16,13 @@ import { TCPFrameBuffer } from "../utility/tcpFrameBuffer";
 type LogotronicRequestBuilder = (message: any) => void;
 type LogotronicResponseHandler = (responseBody: Buffer) => void;
 
+// --- Application Restart Tag ---
+const RESTART_TAG_NAME = "LTA-Settings.application.restart";
+
+// --- Connection Control Tag ---
+const CONNECTION_TAG_NAME = "LTA-Settings.connection.connect";
+let isManuallyDisconnected: boolean = false;
+
 // --- Logotronic Servis Importları (Builders - Request) ---
 import {
   logotronicRequestBuilder as acceptBuilder,
@@ -273,7 +280,10 @@ const dataprocessing = {
         }, 2000);
       });
 
-      logger.info("Trying to connect Logotronic Server");
+      // TCP connection will be controlled by PLC tag "LTA-Settings.connection.connect"
+      logger.info(
+        "Initializing Logotronic Server TCP Client (connection controlled by PLC tag)"
+      );
       tcpClientInstance = new TCPClient(
         config.logotronicserver.host,
         config.logotronicserver.port,
@@ -282,9 +292,10 @@ const dataprocessing = {
 
       tcpClientInstance.client.on("connect", () => {
         logger.info("TCP Client is connected to Logotronic Server");
+        isManuallyDisconnected = false;
         TCPListener();
       });
-      tcpClientInstance.connect();
+      // Do not auto-connect here - wait for PLC tag
     } catch (error) {
       logger.error(error);
     }
@@ -368,6 +379,9 @@ function processMetadataMessage(message: IMetadataMessage, topic: string) {
       logger.info(
         "MQTT Listener is now ready to process machine data messages."
       );
+
+      // Check connection tag value and establish TCP connection if true
+      checkAndManageLogotronicConnection();
     }, 2000);
   }
 }
@@ -378,6 +392,12 @@ function processMachineMessage(message: any, topic: string) {
     logger.debug(`Processing machine data message from topic ${topic}.`);
     // 1. Gelen değerlerle TagStore'u güncelle
     tagStoreInstance.updateValues(message);
+
+    // Check for application restart trigger
+    checkRestartTrigger(message);
+
+    // Check for connection control tag changes
+    checkConnectionTagChange(message);
 
     const triggerTagsMap = new Map<string, LogotronicRequestBuilder>();
 
@@ -419,6 +439,172 @@ function processMachineMessage(message: any, topic: string) {
       }
     }
   }
+}
+
+/**
+ * Checks if the restart tag is set to true and restarts the application
+ */
+function checkRestartTrigger(message: any): void {
+  const vals = (message?.vals || message?.records?.[0]?.vals) as any[];
+
+  if (!vals || !Array.isArray(vals)) {
+    return;
+  }
+
+  const restartTagData = tagStoreInstance.getTagDataByTagName(RESTART_TAG_NAME);
+  if (!restartTagData) {
+    return;
+  }
+
+  for (const val of vals) {
+    if (val.id === restartTagData.id) {
+      if (val.val === true || val.val === 1 || val.val === "1") {
+        logger.info(
+          "Application restart requested via MQTT tag. Initiating restart..."
+        );
+        gracefulShutdown();
+      }
+    }
+  }
+}
+
+/**
+ * Checks the connection tag value in TagStore and manages TCP connection accordingly.
+ * Called after metadata initialization to establish initial connection if tag is true.
+ */
+function checkAndManageLogotronicConnection(): void {
+  const connectionTagData =
+    tagStoreInstance.getTagDataByTagName(CONNECTION_TAG_NAME);
+
+  if (!connectionTagData) {
+    logger.warn(
+      `Connection control tag "${CONNECTION_TAG_NAME}" not found in TagStore. TCP connection will not be established automatically.`
+    );
+    return;
+  }
+
+  const connectionValue = connectionTagData.value;
+  logger.info(
+    `Connection control tag "${CONNECTION_TAG_NAME}" value: ${connectionValue}`
+  );
+
+  if (
+    connectionValue === true ||
+    connectionValue === 1 ||
+    connectionValue === "1"
+  ) {
+    logger.info(
+      "Connection tag is TRUE. Establishing TCP connection to Logotronic Server..."
+    );
+    connectToLogotronicServer();
+  } else {
+    logger.info(
+      "Connection tag is FALSE. Waiting for connection tag to become TRUE before connecting to Logotronic Server."
+    );
+  }
+}
+
+/**
+ * Monitors the connection control tag changes in incoming MQTT messages.
+ * Connects or disconnects TCP based on tag value changes.
+ */
+function checkConnectionTagChange(message: any): void {
+  const vals = (message?.vals || message?.records?.[0]?.vals) as any[];
+
+  if (!vals || !Array.isArray(vals)) {
+    return;
+  }
+
+  const connectionTagData =
+    tagStoreInstance.getTagDataByTagName(CONNECTION_TAG_NAME);
+  if (!connectionTagData) {
+    return;
+  }
+
+  for (const val of vals) {
+    if (val.id === connectionTagData.id) {
+      const shouldConnect =
+        val.val === true || val.val === 1 || val.val === "1";
+
+      if (shouldConnect && !tcpClientInstance.isConnected) {
+        logger.info(
+          "Connection tag changed to TRUE. Establishing TCP connection to Logotronic Server..."
+        );
+        connectToLogotronicServer();
+      } else if (!shouldConnect && tcpClientInstance.isConnected) {
+        logger.info(
+          "Connection tag changed to FALSE. Disconnecting from Logotronic Server..."
+        );
+        disconnectFromLogotronicServer();
+      }
+    }
+  }
+}
+
+/**
+ * Establishes TCP connection to Logotronic Server
+ */
+function connectToLogotronicServer(): void {
+  if (!tcpClientInstance) {
+    logger.error("TCP Client instance not initialized. Cannot connect.");
+    return;
+  }
+
+  if (tcpClientInstance.isConnected) {
+    logger.info("TCP Client is already connected to Logotronic Server.");
+    return;
+  }
+
+  isManuallyDisconnected = false;
+  tcpClientInstance.setAutoReconnect(true); // Enable auto-reconnect when connecting
+  logger.info(
+    `Connecting to Logotronic Server at ${config.logotronicserver.host}:${config.logotronicserver.port}...`
+  );
+  tcpClientInstance.connect();
+}
+
+/**
+ * Disconnects from Logotronic Server
+ */
+function disconnectFromLogotronicServer(): void {
+  if (!tcpClientInstance) {
+    logger.error("TCP Client instance not initialized. Cannot disconnect.");
+    return;
+  }
+
+  if (!tcpClientInstance.isConnected) {
+    logger.info("TCP Client is already disconnected from Logotronic Server.");
+    return;
+  }
+
+  isManuallyDisconnected = true;
+  logger.info("Disconnecting from Logotronic Server...");
+  tcpClientInstance.disconnect();
+}
+
+/**
+ * Performs graceful shutdown before restart
+ */
+function gracefulShutdown(): void {
+  logger.info("Initiating graceful shutdown...");
+
+  // Close MQTT connection
+  if (mqttClientInstance?.client) {
+    mqttClientInstance.client.end(true);
+    logger.info("MQTT client disconnected.");
+  }
+
+  // Close TCP connection
+  if (tcpClientInstance?.client) {
+    tcpClientInstance.client.destroy();
+    logger.info("TCP client disconnected.");
+  }
+
+  // Exit with code 0 - PM2 will restart the process automatically
+  setTimeout(() => {
+    logger.info("Exiting process for restart. PM2 will restart automatically.");
+    process.exit(0);
+  }, 1000);
 }
 
 // **Aşama 2: TCP Yanıtlarını İşleme**

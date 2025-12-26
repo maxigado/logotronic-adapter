@@ -43,6 +43,26 @@
         margin: 0;
         font-weight: 600;
       }
+      header nav {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      header nav a {
+        color: var(--clr-text);
+        text-decoration: none;
+        font-size: 0.85rem;
+        opacity: 0.8;
+        transition: var(--transition);
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+      }
+      header nav a:hover {
+        opacity: 1;
+        border-color: #3d3d5f;
+        background: rgba(255, 255, 255, 0.05);
+      }
       #last-update {
         font-size: 0.75rem;
         opacity: 0.7;
@@ -196,91 +216,76 @@
         text-align: center;
         opacity: 0.4;
       }
-      /* Preview Modal */
-      .modal-overlay {
+      /* Preview Notification */
+      .preview-notification {
         position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 30, 0.75);
+        bottom: 24px;
+        right: 24px;
+        background: var(--clr-bg-panel);
+        border: 1px solid #3d3d5f;
+        border-radius: var(--radius);
+        padding: 16px 20px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        z-index: 1000;
+        animation: slideIn 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      .preview-notification .icon {
+        width: 40px;
+        height: 40px;
+        background: var(--clr-green);
+        border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        z-index: 1000;
-        backdrop-filter: blur(2px);
       }
-      .modal {
-        width: 1200px;
-        height: 600px;
-        background: #12122a;
-        border: 2px solid #23233c;
-        border-radius: 14px;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
-        position: relative;
-        display: flex;
-        flex-direction: column;
-        overflow: hidden;
+      .preview-notification .content {
+        flex: 1;
       }
-      .modal header {
+      .preview-notification .content h4 {
+        margin: 0 0 4px;
+        font-size: 0.9rem;
+      }
+      .preview-notification .content p {
         margin: 0;
-        padding: 10px 16px;
-        background: #23233c;
-        border: none;
-        box-shadow: none;
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+      .preview-notification .actions {
         display: flex;
-        align-items: center;
-        justify-content: space-between;
+        gap: 8px;
       }
-      .modal header h2 {
-        margin: 0;
-        font-size: 0.95rem;
-        letter-spacing: 0.5px;
-      }
-      .modal-close {
+      .preview-notification button {
         background: transparent;
         border: 1px solid #3d3d5f;
         color: #fff;
         cursor: pointer;
-        padding: 4px 10px;
+        padding: 8px 14px;
         border-radius: 6px;
-        font-size: 0.7rem;
+        font-size: 0.75rem;
         transition: 0.2s;
       }
-      .modal-close:hover {
+      .preview-notification button:hover {
         background: #3d3d5f;
       }
-      .modal-content {
-        flex: 1;
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 10px;
-        padding: 12px 16px 18px;
-        background: linear-gradient(135deg, #18183a, #101028);
+      .preview-notification button.primary {
+        background: var(--clr-green);
+        border-color: var(--clr-green);
       }
-      .modal-image-wrapper {
-        background: #000028;
-        border: 1px solid #23233c;
-        border-radius: 10px;
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-      }
-      .modal-image-wrapper span.side-label {
-        position: absolute;
-        top: 8px;
-        left: 10px;
-        background: #23233c;
-        padding: 2px 8px;
-        border-radius: 6px;
-        font-size: 0.55rem;
-        letter-spacing: 0.5px;
-        opacity: 0.85;
-      }
-      .modal-image-wrapper img {
-        max-width: 100%;
-        max-height: 100%;
-        object-fit: contain;
-        animation: fade 0.4s ease;
+      .preview-notification button.primary:hover {
+        background: #019947;
       }
       .hidden {
         display: none !important;
@@ -290,12 +295,38 @@
   <body>
     <header>
       <h1>Logotronic Adapter</h1>
-      <div id="last-update">Waiting...</div>
+      <nav>
+        <a href="/preview">Preview</a>
+        <div id="last-update">Waiting...</div>
+      </nav>
     </header>
     <main class="dashboard" id="dashboard">
       <!-- Panels will be injected by JS -->
     </main>
-    <div id="preview-modal-root" class="hidden"></div>
+    <div id="preview-notification" class="preview-notification hidden">
+      <div class="icon">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="white"
+          stroke-width="2"
+        >
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+          <circle cx="8.5" cy="8.5" r="1.5"></circle>
+          <polyline points="21 15 16 10 5 21"></polyline>
+        </svg>
+      </div>
+      <div class="content">
+        <h4>New Preview Available</h4>
+        <p id="preview-notification-info">Preview images received</p>
+      </div>
+      <div class="actions">
+        <button id="preview-dismiss-btn">Dismiss</button>
+        <button id="preview-view-btn" class="primary">View Preview</button>
+      </div>
+    </div>
     <footer></footer>
 
     <script>
@@ -442,63 +473,51 @@
         </section>
       `;
 
-      // ---- Preview Images Modal Handling ----
-      const modalRoot = document.getElementById("preview-modal-root");
-      function closePreviewModal() {
-        modalRoot.classList.add("hidden");
-        modalRoot.innerHTML = "";
+      // ---- Preview Notification Handling ----
+      const previewNotification = document.getElementById(
+        "preview-notification"
+      );
+      const previewNotificationInfo = document.getElementById(
+        "preview-notification-info"
+      );
+      const previewDismissBtn = document.getElementById("preview-dismiss-btn");
+      const previewViewBtn = document.getElementById("preview-view-btn");
+      let notificationTimeout = null;
+
+      function hidePreviewNotification() {
+        previewNotification.classList.add("hidden");
+        if (notificationTimeout) {
+          clearTimeout(notificationTimeout);
+          notificationTimeout = null;
+        }
       }
-      function showPreviewModal(payload) {
+
+      function showPreviewNotification(payload) {
         if (!payload || !payload.images || !payload.images.length) return;
-        const imgs = payload.images;
-        modalRoot.innerHTML = `
-          <div class="modal-overlay">
-            <div class="modal">
-              <header>
-                <h2>Preview Images</h2>
-                <button class="modal-close" id="preview-close-btn">CLOSE</button>
-              </header>
-              <div class="modal-content" style="grid-template-columns: repeat(${
-                imgs.length
-              },1fr)">
-                ${imgs
-                  .map(
-                    (img) => `
-                  <div class="modal-image-wrapper">
-                    <span class="side-label">Side: ${img.side ?? "N/A"}</span>
-                    <img src="${img.dataUrl}" alt="Preview Side ${
-                      img.side
-                    }" draggable="false" />
-                  </div>
-                `
-                  )
-                  .join("")}
-              </div>
-            </div>
-          </div>
-        `;
-        modalRoot.classList.remove("hidden");
-        document
-          .getElementById("preview-close-btn")
-          ?.addEventListener("click", closePreviewModal);
-        // Allow ESC to close
-        window.addEventListener("keydown", escListener);
-      }
-      function escListener(ev) {
-        if (ev.key === "Escape") {
-          closePreviewModal();
-          window.removeEventListener("keydown", escListener);
+
+        const count = payload.images.length;
+        previewNotificationInfo.textContent = `${count} preview image${
+          count > 1 ? "s" : ""
+        } received`;
+        previewNotification.classList.remove("hidden");
+
+        // Auto-hide after 10 seconds
+        if (notificationTimeout) {
+          clearTimeout(notificationTimeout);
         }
+        notificationTimeout = setTimeout(hidePreviewNotification, 10000);
       }
-      // Click outside to close
-      modalRoot.addEventListener("click", (e) => {
-        if (e.target.classList.contains("modal-overlay")) {
-          closePreviewModal();
-        }
+
+      previewDismissBtn.addEventListener("click", hidePreviewNotification);
+
+      previewViewBtn.addEventListener("click", () => {
+        hidePreviewNotification();
+        window.open("/preview", "_blank");
       });
+
       socket.on("previewImages", (payload) => {
         console.log("Received previewImages payload", payload);
-        showPreviewModal(payload);
+        showPreviewNotification(payload);
       });
     </script>
   </body>

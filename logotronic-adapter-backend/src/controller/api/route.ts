@@ -11,6 +11,12 @@ router.get("/", (req: Request, res: Response) => {
   });
 });
 
+router.get("/preview", (req: Request, res: Response) => {
+  res.render("preview", {
+    title: "Preview - Logotronic Adapter",
+  });
+});
+
 router.get("/status", getMachineStatus);
 router.get("/tagstore", getTagStoreByID);
 router.get("/tagstore/:id", getTagDataById);

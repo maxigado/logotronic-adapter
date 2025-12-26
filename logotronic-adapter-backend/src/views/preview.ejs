@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Preview - Logotronic Adapter</title>
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+      :root {
+        --clr-bg-body: #000028;
+        --clr-bg-panel: #23233c;
+        --clr-bg-subpanel: #000028;
+        --clr-text: #ffffff;
+        --clr-green: #018136;
+        --clr-red: #b81e31;
+        --clr-gray: #b3b3be;
+        --radius: 10px;
+        --transition: 0.25s ease;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: "Segoe UI", Roboto, Arial, sans-serif;
+        background: var(--clr-bg-body);
+        color: var(--clr-text);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        background: var(--clr-bg-panel);
+        padding: 18px 24px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 3px solid #111145;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+      }
+      header h1 {
+        font-size: 1.4rem;
+        letter-spacing: 0.5px;
+        margin: 0;
+        font-weight: 600;
+      }
+      header nav {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      header nav a {
+        color: var(--clr-text);
+        text-decoration: none;
+        font-size: 0.85rem;
+        opacity: 0.8;
+        transition: var(--transition);
+      }
+      header nav a:hover {
+        opacity: 1;
+      }
+      #last-update {
+        font-size: 0.75rem;
+        opacity: 0.7;
+      }
+      .preview-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+      }
+      .toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        padding: 12px 0;
+        background: var(--clr-bg-panel);
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+      }
+      .toolbar button {
+        background: var(--clr-bg-subpanel);
+        border: 1px solid #3d3d5f;
+        color: var(--clr-text);
+        cursor: pointer;
+        padding: 8px 16px;
+        border-radius: 6px;
+        font-size: 0.85rem;
+        transition: var(--transition);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .toolbar button:hover {
+        background: #3d3d5f;
+      }
+      .toolbar button:active {
+        transform: scale(0.98);
+      }
+      .toolbar .zoom-level {
+        font-size: 0.85rem;
+        min-width: 60px;
+        text-align: center;
+        opacity: 0.9;
+      }
+      .images-wrapper {
+        flex: 1;
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+        overflow: auto;
+      }
+      .image-panel {
+        background: var(--clr-bg-panel);
+        border: 1px solid #2f2f4d;
+        border-radius: var(--radius);
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
+      }
+      .image-panel .side-label {
+        background: var(--clr-bg-subpanel);
+        padding: 10px 16px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        border-bottom: 1px solid #2f2f4d;
+      }
+      .image-container {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        overflow: auto;
+        padding: 10px;
+        background: linear-gradient(135deg, #18183a, #101028);
+        min-height: 400px;
+      }
+      .image-container img {
+        max-width: 100%;
+        max-height: 100%;
+        object-fit: contain;
+        transition: transform 0.2s ease;
+        cursor: grab;
+      }
+      .image-container img:active {
+        cursor: grabbing;
+      }
+      .no-preview {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        color: var(--clr-gray);
+        gap: 16px;
+      }
+      .no-preview svg {
+        width: 80px;
+        height: 80px;
+        opacity: 0.4;
+      }
+      .no-preview p {
+        font-size: 1rem;
+        opacity: 0.7;
+      }
+      .fade-in {
+        animation: fade 0.5s ease;
+      }
+      @keyframes fade {
+        from {
+          opacity: 0;
+          transform: translateY(4px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+      footer {
+        padding: 16px;
+        font-size: 0.55rem;
+        text-align: center;
+        opacity: 0.4;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>Logotronic Adapter - Preview</h1>
+      <nav>
+        <a href="/">← Dashboard</a>
+        <div id="last-update">Waiting for preview...</div>
+      </nav>
+    </header>
+
+    <div class="preview-container">
+      <div class="toolbar">
+        <button id="zoom-out-btn" title="Zoom Out">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          Zoom Out
+        </button>
+        <span class="zoom-level" id="zoom-level">100%</span>
+        <button id="zoom-in-btn" title="Zoom In">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <line x1="11" y1="8" x2="11" y2="14"></line>
+            <line x1="8" y1="11" x2="14" y2="11"></line>
+          </svg>
+          Zoom In
+        </button>
+        <button id="reset-zoom-btn" title="Reset Zoom">
+          <svg
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
+            <path d="M3 3v5h5"></path>
+          </svg>
+          Reset
+        </button>
+      </div>
+
+      <div class="images-wrapper" id="images-wrapper">
+        <div class="no-preview" id="no-preview">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+          >
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <circle cx="8.5" cy="8.5" r="1.5"></circle>
+            <polyline points="21 15 16 10 5 21"></polyline>
+          </svg>
+          <p>No preview images received yet.</p>
+          <p style="font-size: 0.75rem">
+            Images will appear here when a preview is requested from Logotronic.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <footer></footer>
+
+    <script>
+      const socket = io();
+      const imagesWrapper = document.getElementById("images-wrapper");
+      const noPreview = document.getElementById("no-preview");
+      const lastUpdateEl = document.getElementById("last-update");
+      const zoomLevelEl = document.getElementById("zoom-level");
+      const zoomInBtn = document.getElementById("zoom-in-btn");
+      const zoomOutBtn = document.getElementById("zoom-out-btn");
+      const resetZoomBtn = document.getElementById("reset-zoom-btn");
+
+      let currentZoom = 100;
+      const ZOOM_MIN = 25;
+      const ZOOM_MAX = 400;
+      const ZOOM_STEP = 25;
+      let currentImages = [];
+
+      function formatTimestamp(date) {
+        if (!date) return "—";
+        return date.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+        });
+      }
+
+      function updateZoomLevel() {
+        zoomLevelEl.textContent = currentZoom + "%";
+        const images = document.querySelectorAll(".image-container img");
+        images.forEach((img) => {
+          img.style.transform = `scale(${currentZoom / 100})`;
+        });
+      }
+
+      function zoomIn() {
+        if (currentZoom < ZOOM_MAX) {
+          currentZoom += ZOOM_STEP;
+          updateZoomLevel();
+        }
+      }
+
+      function zoomOut() {
+        if (currentZoom > ZOOM_MIN) {
+          currentZoom -= ZOOM_STEP;
+          updateZoomLevel();
+        }
+      }
+
+      function resetZoom() {
+        currentZoom = 100;
+        updateZoomLevel();
+      }
+
+      zoomInBtn.addEventListener("click", zoomIn);
+      zoomOutBtn.addEventListener("click", zoomOut);
+      resetZoomBtn.addEventListener("click", resetZoom);
+
+      // Keyboard shortcuts for zoom
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "+" || e.key === "=") {
+          e.preventDefault();
+          zoomIn();
+        } else if (e.key === "-" || e.key === "_") {
+          e.preventDefault();
+          zoomOut();
+        } else if (e.key === "0") {
+          e.preventDefault();
+          resetZoom();
+        }
+      });
+
+      // Mouse wheel zoom (with Ctrl key)
+      imagesWrapper.addEventListener(
+        "wheel",
+        (e) => {
+          if (e.ctrlKey) {
+            e.preventDefault();
+            if (e.deltaY < 0) {
+              zoomIn();
+            } else {
+              zoomOut();
+            }
+          }
+        },
+        { passive: false }
+      );
+
+      function renderImages(images) {
+        if (!images || !images.length) {
+          noPreview.style.display = "flex";
+          return;
+        }
+
+        noPreview.style.display = "none";
+        currentImages = images;
+
+        // Clear existing image panels (but keep noPreview)
+        const existingPanels = imagesWrapper.querySelectorAll(".image-panel");
+        existingPanels.forEach((panel) => panel.remove());
+
+        images.forEach((img, index) => {
+          const panel = document.createElement("div");
+          panel.className = "image-panel fade-in";
+          panel.innerHTML = `
+            <div class="side-label">Side: ${img.side ?? "N/A"}</div>
+            <div class="image-container">
+              <img src="${img.dataUrl}" alt="Preview Side ${
+            img.side
+          }" draggable="false" style="transform: scale(${currentZoom / 100})" />
+            </div>
+          `;
+          imagesWrapper.appendChild(panel);
+        });
+      }
+
+      socket.on("previewImages", (payload) => {
+        console.log("Received previewImages payload", payload);
+        if (payload && payload.images && payload.images.length) {
+          lastUpdateEl.textContent =
+            "Last Update: " + formatTimestamp(new Date());
+          renderImages(payload.images);
+        }
+      });
+
+      socket.on("disconnect", () => {
+        lastUpdateEl.textContent = "Connection lost – reconnecting...";
+      });
+
+      socket.on("connect", () => {
+        if (currentImages.length) {
+          lastUpdateEl.textContent = "Connected - Showing last preview";
+        } else {
+          lastUpdateEl.textContent = "Connected - Waiting for preview...";
+        }
+      });
+    </script>
+  </body>
+</html>

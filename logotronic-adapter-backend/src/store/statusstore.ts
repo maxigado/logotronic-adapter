@@ -9,8 +9,18 @@ import {
   DatabusStatus,
   LogotronicStatus,
 } from "../dataset/status";
+import { tagStoreInstance } from "./tagstore";
+import { IPublishMessage } from "../dataset/common";
+import { config } from "../config/config";
 
 const WEBSOCKET_EVENT = "statusUpdate";
+
+// Health tag names for MQTT publishing
+const HEALTH_TAG_NAMES = {
+  plc: "LTA-Settings.application.status.health.plc", // connector status
+  server: "LTA-Settings.application.status.health.server", // logotronic status
+  app: "LTA-Settings.application.status.health.app", // application status (always 1 if running)
+};
 
 class StatusStore {
   private static instance: StatusStore;
@@ -18,7 +28,10 @@ class StatusStore {
   // Tembel yükleme için başlatıcıdan kaldırıldı:
   private wsManager: WebSocketManager | null = null;
   private periodicInterval: NodeJS.Timeout | null = null;
+  private mqttStatusInterval: NodeJS.Timeout | null = null;
   private readonly PERIODIC_INTERVAL_MS = 60000;
+  private readonly MQTT_STATUS_INTERVAL_MS = 60000; // 1 minute for MQTT status publishing
+  private mqttClient: any = null; // Lazy loaded MQTT client reference
 
   private constructor() {
     this.store = {
@@ -27,6 +40,9 @@ class StatusStore {
       connector: "disconnected",
     };
     // Hata veren satır kaldırıldı. wsManager şimdi null olarak başlatılıyor.
+
+    // Start MQTT status publishing when StatusStore is created
+    this.startMqttStatusPublishing();
   }
 
   public static getInstance(): StatusStore {
@@ -161,6 +177,130 @@ class StatusStore {
         logger.info("Stopping periodic status updates.");
       }
     }, 100);
+  }
+
+  /**
+   * Converts connection status to numeric value (1 = good/connected, 0 = bad/disconnected/error)
+   */
+  private statusToNumeric(
+    status: ConnectionStatus | DatabusStatus | LogotronicStatus
+  ): number {
+    return status === "connected" ? 1 : 0;
+  }
+
+  /**
+   * Sets the MQTT client reference for publishing status
+   * This should be called after the MQTT client is initialized
+   */
+  public setMqttClient(client: any): void {
+    this.mqttClient = client;
+    logger.info(
+      "StatusStore: MQTT client reference set for status publishing."
+    );
+  }
+
+  /**
+   * Starts periodic MQTT status publishing every 1 minute
+   */
+  private startMqttStatusPublishing(): void {
+    if (this.mqttStatusInterval) {
+      logger.warn("MQTT status publishing is already running.");
+      return;
+    }
+
+    logger.info("Starting MQTT status publishing (every 1 minute).");
+
+    // Publish immediately on start, then every minute
+    // Use setTimeout to allow MQTT client to be set first
+    setTimeout(() => {
+      this.publishStatusToMqtt();
+    }, 5000); // Initial delay to allow MQTT connection
+
+    this.mqttStatusInterval = setInterval(() => {
+      this.publishStatusToMqtt();
+    }, this.MQTT_STATUS_INTERVAL_MS);
+  }
+
+  /**
+   * Stops MQTT status publishing
+   */
+  public stopMqttStatusPublishing(): void {
+    if (this.mqttStatusInterval) {
+      clearInterval(this.mqttStatusInterval);
+      this.mqttStatusInterval = null;
+      logger.info("Stopped MQTT status publishing.");
+    }
+  }
+
+  /**
+   * Publishes current status to MQTT
+   * Maps:
+   * - connector status -> LTA-Settings.application.status.health.plc
+   * - logotronic status -> LTA-Settings.application.status.health.server
+   * - app status (always 1) -> LTA-Settings.application.status.health.app
+   */
+  private publishStatusToMqtt(): void {
+    // Lazy load MQTT client from dataprocessing if not set
+    if (!this.mqttClient) {
+      try {
+        const { mqttClientInstance } = require("../services/dataprocessing");
+        this.mqttClient = mqttClientInstance;
+      } catch (error) {
+        logger.debug("MQTT client not yet available for status publishing.");
+        return;
+      }
+    }
+
+    if (!this.mqttClient || !this.mqttClient.client?.connected) {
+      logger.debug("MQTT client not connected. Skipping status publish.");
+      return;
+    }
+
+    // Get tag data from tagStore
+    const plcTag = tagStoreInstance.getTagDataByTagName(HEALTH_TAG_NAMES.plc);
+    const serverTag = tagStoreInstance.getTagDataByTagName(
+      HEALTH_TAG_NAMES.server
+    );
+    const appTag = tagStoreInstance.getTagDataByTagName(HEALTH_TAG_NAMES.app);
+
+    if (!plcTag || !serverTag || !appTag) {
+      logger.info(
+        "Health tags not found in tagStore. Waiting for metadata initialization. " +
+          `plc: ${!!plcTag}, server: ${!!serverTag}, app: ${!!appTag}`
+      );
+      return;
+    }
+
+    // Build vals array for MQTT message
+    const vals: { id: string; val: number }[] = [
+      {
+        id: plcTag.id,
+        val: this.statusToNumeric(this.store.connector), // connector -> plc
+      },
+      {
+        id: serverTag.id,
+        val: this.statusToNumeric(this.store.logotronic), // logotronic -> server
+      },
+      {
+        id: appTag.id,
+        val: 1, // app is always 1 as long as it's running
+      },
+    ];
+
+    const mqttMessage: IPublishMessage = {
+      seq: 0,
+      vals: vals,
+    };
+
+    try {
+      const topic = config.databus.topic.write;
+      this.mqttClient.publish(topic, mqttMessage as any);
+      logger.info(
+        `Published health status to MQTT: plc=${vals[0].val}, server=${vals[1].val}, app=${vals[2].val}`
+      );
+    } catch (error) {
+      logger.error("Error publishing health status to MQTT:", error);
+    }
   }
 }
 

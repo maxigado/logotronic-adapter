@@ -10,6 +10,7 @@ class TCPClient {
   public port: number;
   public isConnected: boolean = false;
   public clientId: string;
+  public autoReconnect: boolean = true;
 
   constructor(host: string, port: number, clientId: string) {
     this.host = host;
@@ -46,7 +47,15 @@ class TCPClient {
     );
 
     statusStoreInstance.setLogotronicStatus("disconnected"); // Status Güncellemesi
-    this.reconnect();
+
+    // Only auto-reconnect if autoReconnect is enabled
+    if (this.autoReconnect) {
+      this.reconnect();
+    } else {
+      logger.info(
+        `Auto-reconnect is disabled for ${this.clientId}. Waiting for manual reconnection.`
+      );
+    }
   }
 
   public onError(error: Error) {
@@ -92,7 +101,16 @@ class TCPClient {
   }
 
   public disconnect() {
+    this.autoReconnect = false;
     this.client.end();
+  }
+
+  /**
+   * Sets the auto-reconnect behavior
+   * @param enabled Whether to enable auto-reconnect on connection loss
+   */
+  public setAutoReconnect(enabled: boolean) {
+    this.autoReconnect = enabled;
   }
 }
 
