@@ -301,6 +301,14 @@
       let initialPinchDistance = null;
       let initialZoom = 100;
 
+      // Single-finger drag/pan state
+      let isDragging = false;
+      let dragStartX = 0;
+      let dragStartY = 0;
+      let dragScrollLeft = 0;
+      let dragScrollTop = 0;
+      let dragContainer = null;
+
       // Prevent default browser zoom on the entire page
       document.addEventListener("gesturestart", (e) => e.preventDefault());
       document.addEventListener("gesturechange", (e) => e.preventDefault());
@@ -383,9 +391,22 @@
         "touchstart",
         (e) => {
           if (e.touches.length === 2 && isOnImageContainer(e.target)) {
+            // Two-finger pinch zoom
             e.preventDefault();
+            isDragging = false; // Cancel any drag
             initialPinchDistance = getTouchDistance(e.touches);
             initialZoom = currentZoom;
+          } else if (e.touches.length === 1 && isOnImageContainer(e.target)) {
+            // Single-finger drag/pan
+            const container = e.target.closest(".image-container");
+            if (container) {
+              isDragging = true;
+              dragContainer = container;
+              dragStartX = e.touches[0].clientX;
+              dragStartY = e.touches[0].clientY;
+              dragScrollLeft = container.scrollLeft;
+              dragScrollTop = container.scrollTop;
+            }
           }
         },
         { passive: false }
@@ -399,10 +420,18 @@
             initialPinchDistance !== null &&
             isOnImageContainer(e.target)
           ) {
+            // Two-finger pinch zoom
             e.preventDefault();
             const currentDistance = getTouchDistance(e.touches);
             const scale = currentDistance / initialPinchDistance;
             setZoom(initialZoom * scale);
+          } else if (e.touches.length === 1 && isDragging && dragContainer) {
+            // Single-finger drag/pan
+            e.preventDefault();
+            const deltaX = e.touches[0].clientX - dragStartX;
+            const deltaY = e.touches[0].clientY - dragStartY;
+            dragContainer.scrollLeft = dragScrollLeft - deltaX;
+            dragContainer.scrollTop = dragScrollTop - deltaY;
           }
         },
         { passive: false }
@@ -412,10 +441,16 @@
         if (e.touches.length < 2) {
           initialPinchDistance = null;
         }
+        if (e.touches.length === 0) {
+          isDragging = false;
+          dragContainer = null;
+        }
       });
 
       imagesWrapper.addEventListener("touchcancel", () => {
         initialPinchDistance = null;
+        isDragging = false;
+        dragContainer = null;
       });
 
       // Keyboard shortcuts for zoom
