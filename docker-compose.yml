@@ -6,8 +6,6 @@ services:
     container_name: logotronic-adapter-backend
     ports:
       - 3000:3000
-    environment:
-      - TZ=Europe/Istanbul
     networks:
       - "proxy-redirect"
     mem_limit: 1024mb
